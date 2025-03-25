@@ -1,0 +1,85 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+// 盒子内字体
+.font-color {
+  background: linear-gradient(180deg, #FFFFFF 0%, #58CAFB 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: PingFang SC-Medium, PingFang SC;
+  font-weight: 500;
+}
+
+.flex-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  align-items: center;
+}
+.dark-font-color {
+  -webkit-text-fill-color: rgba(97, 137, 183, 1);
+}
+
+
+/* 定义keyframe动画，命名为blink */
+@keyframes blink{
+  0%{opacity: 1;}
+
+  100%{opacity: 0.3;}
+}
+/* 添加兼容性前缀 */
+@-webkit-keyframes blink {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+@-moz-keyframes blink {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+@-ms-keyframes blink {
+    0% {opacity: 1; }
+    100% { opacity: 0;}
+}
+@-o-keyframes blink {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+/* 定义blink类*/
+.blink{
+    color: red;
+    font-size:46px;
+    animation: blink 1s linear infinite;
+    /* 其它浏览器兼容性前缀 */
+    -webkit-animation: blink 1s linear infinite;
+    -moz-animation: blink 1s linear infinite;
+    -ms-animation: blink 1s linear infinite;
+    -o-animation: blink 1s linear infinite;
+}
+.dv-scroll-board {
+  color: rgba(117, 163, 223, 1);
+  font-size: 10px;
+}
+.dv-scroll-board .header {
+  color: white;
+  font-size: 10px;
+}
+.no-data {
+  font-size: 30px;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.age-box-title {
+  float: right;
+  font-size: 12px !important;
+}
