@@ -229,7 +229,7 @@ export default {
       
       // 尝试通过动态添加脚本加载
       const script = document.createElement('script');
-      script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyCeHfDa_fBN2NJ7Tj68zI8XjJGMw_K5d18&callback=initGoogleMap';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.VUE_APP_GOOGLE_MAPS_API_KEY}&callback=initGoogleMap`;
       script.async = true;
       script.defer = true;
       
