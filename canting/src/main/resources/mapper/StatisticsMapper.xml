@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hysk.canting.mapper.StatisticsMapper">
+    
+    <!-- 获取餐厅评分统计 -->
+    <select id="getRestaurantStatistics" resultType="java.util.Map">
+        SELECT
+            c.id as canteenId,
+            c.name as canteenName,
+            COUNT(DISTINCT s.id) as totalScores
+        FROM canteen c
+        LEFT JOIN score_list s ON c.id = s.canteen_id
+        AND s.create_time BETWEEN #{startDate} AND #{endDate}
+        WHERE c.id = #{canteenId}
+        GROUP BY c.id, c.name
+    </select>
+
+    <!-- 获取评分分布 -->
+    <select id="getRatingDistribution" resultType="java.util.Map">
+        SELECT
+            CAST(s.score AS SIGNED) as rating,
+            COUNT(*) as count
+        FROM score_list s
+        WHERE s.canteen_id = #{canteenId}
+        AND s.create_time BETWEEN #{startDate} AND #{endDate}
+        GROUP BY CAST(s.score AS SIGNED)
+        ORDER BY rating
+    </select>
+
+    <!-- 获取评论时间线 -->
+    <select id="getCommentsTimeline" resultType="java.util.Map">
+        SELECT
+            DATE(c.create_time) as date,
+            COUNT(*) as count
+        FROM comment c
+        WHERE c.canteen_id = #{canteenId}
+        AND c.create_time BETWEEN #{startDate} AND #{endDate}
+        GROUP BY DATE(c.create_time)
+        ORDER BY date
+    </select>
+
+</mapper> 

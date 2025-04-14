@@ -186,17 +186,27 @@ export default {
     async loadRestaurants() {
       try {
         let response;
+        // 获取认证信息
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        // 添加用户ID和角色到请求头
+        headers['X-User-Id'] = this.userId;
+        headers['X-User-Role'] = this.userRole;
+        
+        console.log("加载餐厅列表: 当前用户角色:", this.userRole, "用户ID:", this.userId);
         
         if (this.userRole === 'Manager') {
           // 管理员可以看到所有餐厅
-          response = await axios.get('http://localhost:8080/list');
+          response = await axios.get('http://localhost:8080/api/canteen/list', { headers });
         } else if (this.userRole === 'Owner') {
           // 业主只能看到自己的餐厅
-          response = await axios.get(`http://localhost:8080/owner/${this.userId}`);
+          response = await axios.get(`http://localhost:8080/api/canteen/owner/canteens`, { headers });
         }
         
-        if (response && response.data.code === 200) {
-          this.restaurants = response.data.data;
+        if (response && response.data && response.data.code === 200) {
+          this.restaurants = response.data.data || [];
+          console.log(`成功加载${this.restaurants.length}家餐厅`);
           
           // 如果只有一个餐厅，自动选择它
           if (this.restaurants.length === 1) {
@@ -204,11 +214,13 @@ export default {
             this.loadMenu();
           }
         } else {
-          this.$message.error('Failed to load restaurants');
+          this.$message.error('Failed to load restaurants: ' + (response?.data?.msg || 'Unknown error'));
+          console.error("加载餐厅失败:", response?.data);
         }
       } catch (error) {
         console.error('Error loading restaurants:', error);
-        this.$message.error('Error loading restaurants');
+        console.error("请求失败详情:", error.response ? error.response.data : error.message);
+        this.$message.error('Error loading restaurants: ' + (error.response?.data?.msg || error.message));
       }
     },
     
@@ -217,18 +229,47 @@ export default {
       
       try {
         this.menuItemForm.restaurantId = this.selectedRestaurantId;
+        this.menuItemForm.canting_id = this.selectedRestaurantId;
         
-        const response = await axios.get(`http://localhost:8080/menu/restaurant/${this.selectedRestaurantId}`);
+        // 获取认证信息
+        const token = localStorage.getItem('token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         
-        if (response.data.code === 200) {
-          this.menuItems = response.data.data;
+        // 添加用户ID和角色到请求头
+        headers['X-User-Id'] = this.userId;
+        headers['X-User-Role'] = this.userRole;
+        
+        console.log(`正在加载餐厅ID=${this.selectedRestaurantId}的菜单`);
+        
+        // 根据后端API路径修正
+        // 后端有两个可用路径：/menu/restaurant/{id} 或 /canting/{id}
+        const response = await axios.get(
+          `http://localhost:8080/menu/restaurant/${this.selectedRestaurantId}`, 
+          { headers }
+        );
+        
+        if (response.data && response.data.code === 200) {
+          // 确保menuItems字段与数据库表字段匹配
+          this.menuItems = response.data.data || [];
+          
+          // 添加额外处理：确保数据字段与前端组件匹配
+          this.menuItems = this.menuItems.map(item => ({
+            ...item,
+            price: parseFloat(item.price) || 0, // 确保价格是数字类型
+            isAvailable: item.is_available === 1, // 处理字段名不一致问题
+            restaurantId: item.canting_id // 处理字段名不一致问题
+          }));
+          
+          console.log(`成功加载${this.menuItems.length}个菜单项`, this.menuItems[0]);
           this.filterByCategory();
         } else {
-          this.$message.error(response.data.msg || 'Failed to load menu items');
+          this.$message.error(response.data?.msg || 'Failed to load menu items');
+          console.error("加载菜单失败:", response.data);
         }
       } catch (error) {
         console.error('Error loading menu:', error);
-        this.$message.error('Error loading menu items');
+        console.error("请求失败详情:", error.response ? error.response.data : error.message);
+        this.$message.error('Error loading menu items: ' + (error.response?.data?.msg || error.message));
       }
     },
     
@@ -249,34 +290,71 @@ export default {
         return;
       }
       
-      // 确保餐厅ID已设置
-      this.menuItemForm.restaurantId = this.selectedRestaurantId;
+      // 确保餐厅ID已设置，并与数据库字段名匹配
+      const formData = {
+        ...this.menuItemForm,
+        canteenId: this.selectedRestaurantId,  // 后端MenuItem实体使用canteenId
+        canting_id: this.selectedRestaurantId,  // 数据库中的字段是canting_id
+        is_available: this.menuItemForm.isAvailable ? 1 : 0, // 数据库中是is_available，1表示可用，0表示不可用
+      };
+      
+      if (this.editMode && formData.id) {
+        // id保持原样
+      } else {
+        // 新增时不需要提供id，数据库会自动生成
+        delete formData.id;
+      }
+      
+      console.log("准备保存菜单项:", formData);
       
       try {
-        let url = 'http://localhost:8080/menu/add';
-        let method = 'post';
+        // 获取认证信息
+        const token = localStorage.getItem('token');
+        const headers = {
+          'Content-Type': 'application/json'
+        };
         
-        // 如果是编辑，使用更新接口
-        if (this.editMode) {
-          url = 'http://localhost:8080/menu/update';
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
         }
         
+        // 添加用户ID和角色到请求头
+        headers['X-User-Id'] = this.userId;
+        headers['X-User-Role'] = this.userRole;
+        
+        // 根据MenuItemController的API路径
+        let url, method;
+        
+        if (this.editMode) {
+          // 对于编辑，使用PUT方法和根路径
+          url = 'http://localhost:8080/menu';
+          method = 'put';
+        } else {
+          // 对于新增，使用POST方法和根路径
+          url = 'http://localhost:8080/menu';
+          method = 'post';
+        }
+        
+        console.log("发送请求到:", url, "方法:", method);
         const response = await axios({
           method,
           url,
-          data: this.menuItemForm
+          data: formData,
+          headers
         });
         
-        if (response.data.code === 200) {
+        if (response.data && response.data.code === 200) {
           this.$message.success(this.editMode ? 'Menu item updated successfully' : 'Menu item added successfully');
           this.resetForm();
           this.loadMenu(); // 重新加载菜单
         } else {
-          this.$message.error(response.data.msg || 'Operation failed');
+          this.$message.error(response.data?.msg || 'Operation failed');
+          console.error("操作失败:", response.data);
         }
       } catch (error) {
         console.error('Error saving menu item:', error);
-        this.$message.error('Error saving menu item');
+        console.error("请求失败详情:", error.response ? error.response.data : error.message);
+        this.$message.error('Error saving menu item: ' + (error.response?.data?.msg || error.message));
       }
     },
     
@@ -296,18 +374,38 @@ export default {
     async deleteMenuItem(menuItem) {
       try {
         if (confirm('Are you sure you want to delete this menu item?')) {
-          const response = await axios.delete(`http://localhost:8080/menu/delete/${menuItem.id}`);
+          // 获取认证信息
+          const token = localStorage.getItem('token');
+          const headers = {};
           
-          if (response.data.code === 200) {
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          
+          // 添加用户ID和角色到请求头
+          headers['X-User-Id'] = this.userId;
+          headers['X-User-Role'] = this.userRole;
+          
+          console.log(`准备删除菜单项ID=${menuItem.id}`);
+          
+          // 根据MenuItemController的API路径
+          const response = await axios.delete(
+            `http://localhost:8080/menu/delete/${menuItem.id}`, 
+            { headers }
+          );
+          
+          if (response.data && response.data.code === 200) {
             this.$message.success('Menu item deleted successfully');
             this.loadMenu(); // 重新加载菜单
           } else {
-            this.$message.error(response.data.msg || 'Failed to delete menu item');
+            this.$message.error(response.data?.msg || 'Failed to delete menu item');
+            console.error("删除失败:", response.data);
           }
         }
       } catch (error) {
         console.error('Error deleting menu item:', error);
-        this.$message.error('Error deleting menu item');
+        console.error("请求失败详情:", error.response ? error.response.data : error.message);
+        this.$message.error('Error deleting menu item: ' + (error.response?.data?.msg || error.message));
       }
     },
     
@@ -315,12 +413,14 @@ export default {
       this.menuItemForm = {
         id: null,
         restaurantId: this.selectedRestaurantId,
+        canting_id: this.selectedRestaurantId, // 与数据库字段对应
         name: '',
         description: '',
         price: 0,
         category: '',
         image: '',
-        isAvailable: true
+        isAvailable: true,
+        is_available: 1 // 与数据库字段对应
       };
       this.editMode = false;
     },

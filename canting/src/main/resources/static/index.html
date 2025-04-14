@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>餐厅管理系统 API</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #0066cc;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #0099cc;
+            margin-top: 30px;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>餐厅管理系统 API</h1>
+    <p>这是餐厅管理系统的后端API服务。以下是可用的API端点：</p>
+    
+    <h2>健康检查</h2>
+    <ul>
+        <li><code>GET /api/health</code> - 检查API服务状态</li>
+    </ul>
+    
+    <h2>数据资源</h2>
+    <ul>
+        <li><code>GET /api/list</code> - 获取列表数据</li>
+    </ul>
+    
+    <h2>餐厅管理</h2>
+    <ul>
+        <li><code>GET /api/canteen/list</code> - 获取餐厅列表</li>
+        <li><code>POST /api/canteen</code> - 添加新餐厅</li>
+        <li><code>PUT /api/canteen</code> - 更新餐厅信息</li>
+        <li><code>GET /api/canteen/owner/canteens</code> - 获取当前用户的餐厅</li>
+    </ul>
+    
+    <h2>统计数据</h2>
+    <ul>
+        <li><code>GET /statistics/canting</code> - 获取餐厅统计数据</li>
+        <li><code>GET /statistics/summary</code> - 获取统计数据汇总</li>
+        <li><code>GET /statistics/owner</code> - 获取业主所有餐厅的统计数据</li>
+    </ul>
+    
+    <h2>菜单管理</h2>
+    <ul>
+        <li><code>GET /api/menu-items/canting/{canteenId}</code> - 获取餐厅的菜单</li>
+        <li><code>POST /api/menu-items</code> - 添加菜单项</li>
+        <li><code>PUT /api/menu-items</code> - 更新菜单项</li>
+    </ul>
+    
+    <h2>评论管理</h2>
+    <ul>
+        <li><code>GET /api/comments/canteen/{canteenId}</code> - 获取餐厅的评论</li>
+        <li><code>POST /api/comments</code> - 添加评论</li>
+        <li><code>DELETE /api/comments/{id}</code> - 删除评论</li>
+    </ul>
+    
+    <p style="margin-top: 50px; color: #666; font-size: 14px;">© 2025 餐厅管理系统</p>
+</body>
+</html> 

@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("com.hysk.canting")
+@MapperScan("com.hysk.canting.mapper")
 public class CantingApplication {
 
 	public static void main(String[] args) {

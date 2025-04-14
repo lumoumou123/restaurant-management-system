@@ -6,6 +6,8 @@
 
 import RestaurantManagement from '../views/RestaurantManagement.vue';
 import Menu from '../views/Menu.vue';
+import RestaurantStatistics from '../views/RestaurantStatistics.vue';
+import Dashboard from '@/views/emergencyDispatch/dashboard'
 
 const routes = [
   {
@@ -14,8 +16,8 @@ const routes = [
   },
   {
     path: '/emergencyDispatch',
-    name: 'emergencyDispatch',
-    component: () => import(/* webpackChunkNAME: "artisan" */ '../views/emergencyDispatch'),
+    name: 'EmergencyDispatch',
+    component: () => import('@/views/emergencyDispatch'),
     meta: { title: 'Restaurant System' }
   },
   {
@@ -23,7 +25,10 @@ const routes = [
     name: 'RestaurantManagement',
     component: RestaurantManagement,
     meta: {
-      title: 'Restaurant Management'
+      title: '餐厅管理',
+      icon: 'el-icon-s-shop',
+      requiresAuth: true,
+      roles: ['Manager', 'Owner']
     }
   },
   {
@@ -34,6 +39,27 @@ const routes = [
       title: 'Menu Management'
     }
   },
+  {
+    path: '/restaurant-statistics',
+    name: 'RestaurantStatistics',
+    component: RestaurantStatistics,
+    meta: {
+      title: '餐厅统计仪表盘',
+      icon: 'el-icon-data-analysis',
+      requiresAuth: true,
+      roles: ['Manager', 'Owner']
+    }
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: Dashboard,
+    meta: {
+      title: '控制台',
+      icon: 'el-icon-s-home',
+      requiresAuth: true
+    }
+  }
 ]
 
 const router = new VueRouter({
@@ -59,7 +85,7 @@ router.beforeEach((to, from, next) => {
   }
   
   // 权限验证 - 餐厅管理页面需要用户登录
-  if (to.path === '/restaurant-management') {
+  if (to.path === '/restaurant-management' || to.path === '/restaurant-statistics') {
     const userRole = localStorage.getItem('userRole');
     if (!userRole || (userRole !== 'Manager' && userRole !== 'Owner')) {
       alert('Please login as Owner or Manager to access this page');

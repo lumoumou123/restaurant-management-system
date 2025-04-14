@@ -21,9 +21,9 @@ export function rate(data) {
 }
 
 // 获取评论列表
-export const getComments = (cantingId) => {
+export const getComments = (restaurantId) => {
   return request({
-    url: `/comment/list/${cantingId}`,
+    url: `/comment/list/${restaurantId}`,
     method: 'get',
     headers: {
       'Content-Type': 'application/json'

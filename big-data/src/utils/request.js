@@ -8,11 +8,14 @@ const service = axios.create({
   timeout: 5000 // request timeout
 })
 
+// 打印配置信息
+console.log('API 基础URL配置:', process.env.VUE_APP_BASE_API)
+
 // request interceptor
 service.interceptors.request.use(
   config => {
     // do something before request is sent
-    
+    console.log('发送请求:', config.url, config.params || config.data)
     return config
   },
   error => {
@@ -35,6 +38,7 @@ service.interceptors.response.use(
    * You can also judge the status by HTTP Status Code
    */
   response => {
+    console.log('收到响应:', response.config.url, response.data)
     const res = response.data
     // if the custom code is not 20000, it is judged as an error.
     // if (res.code !== 20000) {
@@ -63,6 +67,16 @@ service.interceptors.response.use(
     // }
   },
   error => {
+    console.error('请求错误:', error)
+    // 添加更详细的错误信息
+    if (error.response) {
+      console.error('错误状态:', error.response.status)
+      console.error('错误数据:', error.response.data)
+    } else if (error.request) {
+      console.error('未收到响应:', error.request)
+    } else {
+      console.error('请求配置错误:', error.message)
+    }
     // if (error.message.indexOf('401') != -1) {
     //   removeToken()
     //   Message({

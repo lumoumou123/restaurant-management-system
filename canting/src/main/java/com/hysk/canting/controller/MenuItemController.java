@@ -3,17 +3,19 @@ package com.hysk.canting.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.hysk.canting.domain.Canteen;
 import com.hysk.canting.domain.MenuItem;
-import com.hysk.canting.mapper.CanteenMapper;
 import com.hysk.canting.mapper.MenuItemMapper;
+import com.hysk.canting.mapper.CanteenMapper;
 import com.hysk.canting.domain.R;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Date;
 import java.util.List;
 
+@Slf4j
 @RestController
-@RequestMapping("/menu")
+@RequestMapping({"/menu", "/api/menu-items"})
 public class MenuItemController {
 
     @Autowired
@@ -25,29 +27,20 @@ public class MenuItemController {
     /**
      * 获取餐厅的所有菜单项
      */
-    @GetMapping("/restaurant/{restaurantId}")
+    @GetMapping({"/restaurant/{restaurantId}", "/list/{restaurantId}"})
     public R<List<MenuItem>> getMenuByRestaurant(@PathVariable Long restaurantId) {
         try {
             if (restaurantId == null) {
                 return R.fail("Restaurant ID is required");
             }
 
-            // 检查餐厅是否存在
-            Canteen restaurant = canteenMapper.selectById(restaurantId);
-            if (restaurant == null) {
-                return R.fail("Restaurant not found");
-            }
-
-            // 查询该餐厅的所有菜单项
-            List<MenuItem> menuItems = menuItemMapper.selectList(
-                    new LambdaQueryWrapper<MenuItem>()
-                            .eq(MenuItem::getRestaurantId, restaurantId)
-                            .orderByAsc(MenuItem::getCategory)
-            );
+            LambdaQueryWrapper<MenuItem> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(MenuItem::getCanteenId, restaurantId);
+            List<MenuItem> menuItems = menuItemMapper.selectList(queryWrapper);
 
             return R.ok(menuItems);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error getting menu items: {}", e.getMessage());
             return R.fail("Failed to get menu items: " + e.getMessage());
         }
     }
@@ -55,34 +48,30 @@ public class MenuItemController {
     /**
      * 添加新菜单项
      */
-    @PostMapping("/add")
+    @PostMapping
     public R<MenuItem> addMenuItem(@RequestBody MenuItem menuItem) {
         try {
-            // 验证必填字段
-            if (menuItem.getRestaurantId() == null || menuItem.getName() == null || menuItem.getPrice() == null) {
-                return R.fail("Restaurant ID, item name and price are required");
+            // 校验数据
+            if (menuItem.getName() == null || menuItem.getPrice() == null || 
+                menuItem.getCanteenId() == null) {
+                return R.fail("Menu item name, price, and canteen ID are required");
             }
-
+            
             // 检查餐厅是否存在
-            Canteen restaurant = canteenMapper.selectById(menuItem.getRestaurantId());
-            if (restaurant == null) {
-                return R.fail("Restaurant not found");
+            Canteen canteen = canteenMapper.selectById(menuItem.getCanteenId());
+            if (canteen == null) {
+                return R.fail("Canteen not found with ID: " + menuItem.getCanteenId());
             }
-
-            // 设置默认值
-            if (menuItem.getIsAvailable() == null) {
-                menuItem.setIsAvailable(true);
-            }
+            
+            // 设置创建时间
             menuItem.setCreateTime(new Date());
-
-            // 插入数据库
-            int result = menuItemMapper.insert(menuItem);
-            if (result > 0) {
-                return R.ok(menuItem);
-            }
-            return R.fail("Failed to add menu item");
+            
+            // 保存到数据库
+            menuItemMapper.insert(menuItem);
+            
+            return R.ok(menuItem);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error adding menu item: {}", e.getMessage());
             return R.fail("Failed to add menu item: " + e.getMessage());
         }
     }
@@ -90,31 +79,38 @@ public class MenuItemController {
     /**
      * 更新菜单项
      */
-    @PostMapping("/update")
+    @PutMapping
     public R<MenuItem> updateMenuItem(@RequestBody MenuItem menuItem) {
         try {
-            // 验证ID
+            // 验证ID存在
             if (menuItem.getId() == null) {
                 return R.fail("Menu item ID is required");
             }
-
-            // 检查菜单项是否存在
+            
+            // 检查菜品是否存在
             MenuItem existingItem = menuItemMapper.selectById(menuItem.getId());
             if (existingItem == null) {
                 return R.fail("Menu item not found");
             }
-
-            // 不允许更改餐厅ID
-            menuItem.setRestaurantId(existingItem.getRestaurantId());
-
-            // 更新数据库
-            int result = menuItemMapper.updateById(menuItem);
-            if (result > 0) {
-                return R.ok(menuItem);
+            
+            // 如果餐厅ID有变更，检查餐厅是否存在
+            if (menuItem.getCanteenId() != null && 
+                !menuItem.getCanteenId().equals(existingItem.getCanteenId())) {
+                Canteen canteen = canteenMapper.selectById(menuItem.getCanteenId());
+                if (canteen == null) {
+                    return R.fail("New canteen not found");
+                }
             }
-            return R.fail("Failed to update menu item");
+            
+            // 设置更新时间
+            menuItem.setUpdateTime(new Date());
+            
+            // 更新数据库
+            menuItemMapper.updateById(menuItem);
+            
+            return R.ok(menuItem);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error updating menu item: {}", e.getMessage());
             return R.fail("Failed to update menu item: " + e.getMessage());
         }
     }
@@ -166,4 +162,27 @@ public class MenuItemController {
             return R.fail("Failed to batch delete menu items: " + e.getMessage());
         }
     }
-} 
+
+    @GetMapping("/canting/{canteenId}")
+    public R<List<MenuItem>> getMenuByCanteen(@PathVariable Long canteenId) {
+        try {
+            if (canteenId == null) {
+                return R.fail("Canteen ID is required");
+            }
+
+            Canteen canteen = canteenMapper.selectById(canteenId);
+            if (canteen == null) {
+                return R.fail("Canteen not found");
+            }
+
+            LambdaQueryWrapper<MenuItem> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(MenuItem::getCanteenId, canteenId);
+            List<MenuItem> menuItems = menuItemMapper.selectList(queryWrapper);
+
+            return R.ok(menuItems);
+        } catch (Exception e) {
+            log.error("Error getting menu items for canteen {}: {}", canteenId, e.getMessage());
+            return R.fail("Failed to get menu items: " + e.getMessage());
+        }
+    }
+}

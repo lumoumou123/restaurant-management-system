@@ -1,28 +1,32 @@
 package com.hysk.canting.domain;
 
 import java.util.Date;
-
 import lombok.Data;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.IdType;
 
 @Data
+@TableName("score_list")
 public class ScoreList {
-    /**
-     *
-     */
-    private Integer id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
-    /**
-     * 评分1-5
-     */
+    @TableField("canting_id")
+    private Long canteenId;
+
     private String score;
 
-    /**
-     *
-     */
+    @TableField("create_time")
     private Date createTime;
 
-    /**
-     *
-     */
-    private Long cantingId;
+    @TableField(exist = false)
+    private Date updateTime;
+
+    @TableField(exist = false)
+    private String comment;
+    
+    @TableField(exist = false)
+    private Integer status;
 }

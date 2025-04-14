@@ -1,6 +1,6 @@
 <template>
   <div class="recruit_box">
-    <GugeMap :cantindizhi="cantindizhi"></GugeMap>
+    <GugeMap :cantindizhi="cantindizhi" @rating-updated="handleRatingUpdated"></GugeMap>
     <div class="hade_box">
       <div class="login_box">
         <div class="login_left">
@@ -27,16 +27,16 @@
               </el-select>
               <el-select @change="getData" v-model="filters.cuisine"  placeholder="Cuisine">
                 <el-option label="All Cuisines" :value="null"></el-option>
-                <el-option label="Chinese" :value="'中餐'"></el-option>
-                <el-option label="Western" :value="'西餐'"></el-option>
-                <el-option label="Japanese" :value="'日料'"></el-option>
-                <el-option label="Home Style" :value="'家常菜'"></el-option>
+                <el-option label="Chinese" :value="'Chinese'"></el-option>
+                <el-option label="Western" :value="'Western'"></el-option>
+                <el-option label="Japanese" :value="'Japanese'"></el-option>
+                <el-option label="Home Style" :value="'Home Style'"></el-option>
               </el-select>
               <el-select @change="getData" v-model="filters.price" placeholder="Price Range">
                 <el-option label="All Prices" :value="null"></el-option>
-                <el-option label="Low" :value="'低'"></el-option>
-                <el-option label="Medium" :value="'中'"></el-option>
-                <el-option label="High" :value="'高'"></el-option>
+                <el-option label="Low" :value="'Low'"></el-option>
+                <el-option label="Medium" :value="'Medium'"></el-option>
+                <el-option label="High" :value="'High'"></el-option>
               </el-select>
             </div>
             <button class="register_button" @click="showRegisterModal = true">Register</button>
@@ -78,6 +78,7 @@
           <div class="identity_actions">
             <button v-if="userRole === 'Manager'" @click="navigateToRestaurantManagement">Add Restaurant</button>
             <button v-if="userRole === 'Owner'" @click="navigateToRestaurantManagement">Manage My Restaurants</button>
+            <button v-if="userRole === 'Manager' || userRole === 'Owner'" @click="navigateToStatistics">Restaurant Statistics</button>
           </div>
         </div>
       </el-collapse-item>
@@ -310,6 +311,13 @@ export default {
     },
     navigateToRestaurantManagement() {
       this.$router.push('/restaurant-management');
+    },
+    navigateToStatistics() {
+      this.$router.push('/restaurant-statistics');
+    },
+    handleRatingUpdated(data) {
+      // Refresh the restaurant list to get updated ratings
+      this.getData();
     },
   },
 }

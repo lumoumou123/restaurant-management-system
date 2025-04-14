@@ -61,6 +61,18 @@
             score-template="{value} points"
           />
         </div>
+        <div class="info-item">
+          <strong>Location:</strong>
+          <span class="coordinates">{{ formatCoordinates(selectedLocation.lat, selectedLocation.lng) }}</span>
+          <el-button 
+            size="mini" 
+            type="primary" 
+            icon="el-icon-copy-document" 
+            @click="copyCoordinates(selectedLocation.lat, selectedLocation.lng)"
+            circle
+            title="Copy coordinates"
+          ></el-button>
+        </div>
         <div class="rating-system">
           <strong>Rate this Restaurant:</strong>
           <el-rate
@@ -229,7 +241,7 @@ export default {
       
       // 尝试通过动态添加脚本加载
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.VUE_APP_GOOGLE_MAPS_API_KEY}&callback=initGoogleMap`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.VUE_APP_GOOGLE_MAPS_API_KEY}&language=en&region=IE&callback=initGoogleMap`;
       script.async = true;
       script.defer = true;
       
@@ -289,17 +301,65 @@ export default {
       }
 
       try {
+        // 创建自定义的地图类型控件
+        const customMapTypeControlDiv = document.createElement('div');
+        customMapTypeControlDiv.className = 'custom-map-type-control';
+        customMapTypeControlDiv.style.padding = '5px';
+        customMapTypeControlDiv.style.display = 'flex';
+        customMapTypeControlDiv.style.backgroundColor = 'white';
+        customMapTypeControlDiv.style.boxShadow = '0 1px 4px rgba(0,0,0,0.3)';
+        customMapTypeControlDiv.style.borderRadius = '2px';
+        customMapTypeControlDiv.style.margin = '10px';
+        customMapTypeControlDiv.style.zIndex = '1';
+        
+        // 创建地图按钮
+        const mapButton = document.createElement('div');
+        mapButton.textContent = 'Map';
+        mapButton.style.padding = '8px 16px';
+        mapButton.style.cursor = 'pointer';
+        mapButton.style.fontFamily = 'Arial, sans-serif';
+        mapButton.style.fontWeight = 'bold';
+        mapButton.style.fontSize = '14px';
+        mapButton.style.color = '#666';
+        mapButton.onclick = () => {
+          this.map.setMapTypeId('roadmap');
+          mapButton.style.color = '#1a73e8';
+          satelliteButton.style.color = '#666';
+        };
+        
+        // 创建卫星按钮
+        const satelliteButton = document.createElement('div');
+        satelliteButton.textContent = 'Satellite';
+        satelliteButton.style.padding = '8px 16px';
+        satelliteButton.style.cursor = 'pointer';
+        satelliteButton.style.fontFamily = 'Arial, sans-serif';
+        satelliteButton.style.fontWeight = 'bold';
+        satelliteButton.style.fontSize = '14px';
+        satelliteButton.style.color = '#666';
+        satelliteButton.onclick = () => {
+          this.map.setMapTypeId('satellite');
+          satelliteButton.style.color = '#1a73e8';
+          mapButton.style.color = '#666';
+        };
+        
+        // 添加按钮到控件
+        customMapTypeControlDiv.appendChild(mapButton);
+        customMapTypeControlDiv.appendChild(satelliteButton);
+        
+        // 创建地图
         this.map = new google.maps.Map(mapContainer, {
-          center: { lat: 53.41291, lng: -8.24389 },
+          center: { lat: 53.4129, lng: -8.2439 },
           zoom: 7,
-          styles: [
-            {
-              featureType: "poi",
-              elementType: "labels",
-              stylers: [{ visibility: "off" }]
-            }
-          ]
+          language: 'en',
+          region: 'IE',
+          mapTypeControl: false, // 关闭默认的地图类型控件
+          zoomControl: true,
+          streetViewControl: true,
+          fullscreenControl: true
         });
+        
+        // 将自定义控件添加到地图上
+        this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(customMapTypeControlDiv);
 
         this.isMapLoaded = true;
 
@@ -378,19 +438,32 @@ export default {
     },
     rateLocation(value) {
       if (!this.selectedLocation || !this.selectedLocation.id) {
-        this.$message.error("无法获取餐厅信息");
+        this.$message.error("Cannot get restaurant information");
         return;
       }
       
-      this.selectedLocation.score = value;
       rate({id: this.selectedLocation.id, score: value})
         .then(res => {
-          this.$message.success("评分成功");
+          if (res.code === 200) {
+            this.$message.success("Rating submitted successfully");
+            // Update the score with the new average from the response
+            if (res.data && typeof res.data.averageRating === 'number') {
+              this.selectedLocation.score = res.data.averageRating;
+              // Emit event to update parent components
+              this.$emit('rating-updated', {
+                restaurantId: this.selectedLocation.id,
+                newRating: res.data.averageRating,
+                totalRatings: res.data.totalRatings
+              });
+            }
+          } else {
+            this.$message.error(res.msg || "Failed to submit rating");
+          }
         })
         .catch(error => {
-          console.error("评分失败：", error);
-          this.$message.error("评分失败，请重试");
-          this.currentRating = this.selectedLocation.score || 0; // 恢复原评分
+          console.error("Rating submission failed:", error);
+          this.$message.error("Failed to submit rating, please try again");
+          this.currentRating = 0; // Reset the rating
         });
     },
     loadComments() {
@@ -433,7 +506,7 @@ export default {
         const commentData = {
           userId: this.currentUserId,
           userName: this.currentUserName,
-          cantingId: this.selectedLocation.id,
+          restaurantId: this.selectedLocation.id,
           content: this.newComment
         };
 
@@ -521,7 +594,60 @@ export default {
     // 计算菜单分类
     getItemsByCategory(category) {
       return this.menuItems.filter(item => item.category === category);
-    }
+    },
+    formatCoordinates(lat, lng) {
+      if (!lat || !lng) return 'N/A';
+      return `${lat.toFixed(6)},${lng.toFixed(6)}`;
+    },
+    copyCoordinates(lat, lng) {
+      if (!lat || !lng) {
+        this.$message.warning('No valid coordinates to copy');
+        return;
+      }
+      
+      const coordString = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+      
+      // 尝试使用现代剪贴板API
+      navigator.clipboard.writeText(coordString)
+        .then(() => {
+          this.$message.success(`Coordinates copied: ${coordString}`);
+        })
+        .catch(err => {
+          // 备用方法
+          const textArea = document.createElement('textarea');
+          textArea.value = coordString;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          textArea.style.top = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          
+          try {
+            document.execCommand('copy');
+            this.$message.success(`Coordinates copied: ${coordString}`);
+          } catch (err) {
+            this.$message.error('Failed to copy coordinates');
+          }
+          
+          document.body.removeChild(textArea);
+        });
+    },
+    // Add loadCurrentRating method
+    async loadCurrentRating() {
+      if (!this.selectedLocation || !this.selectedLocation.id) return;
+      
+      try {
+        const response = await axios.get(`http://localhost:8080/current-rating/${this.selectedLocation.id}`);
+        if (response.data.code === 200) {
+          const result = response.data.data;
+          this.selectedLocation.score = result.averageRating;
+        }
+      } catch (error) {
+        console.error('Error loading current rating:', error);
+        this.$message.error('Failed to refresh rating');
+      }
+    },
   },
   computed: {
     // 提取所有不重复的菜单分类
@@ -812,5 +938,15 @@ export default {
 
 .menu-item-status {
   margin-top: 8px;
+}
+
+.coordinates {
+  font-family: monospace;
+  background-color: #f5f7fa;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+  margin-right: 8px;
+  font-size: 13px;
 }
 </style>
