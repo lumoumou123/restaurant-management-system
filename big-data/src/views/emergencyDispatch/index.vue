@@ -177,8 +177,8 @@ export default {
       }
       getlist(parmse).then(res => {
         if (res.code == 200) {
-          // 格式化 createTime
-          this.qingdiuList = res.data.map(item => {
+          // 先获取所有数据
+          let allData = res.data.map(item => {
             const date = new Date(item.createTime);  // 转换为 Date 对象
             const year = date.getFullYear();  // 获取年份
             const month = (date.getMonth() + 1).toString().padStart(2, '0');  // 获取月份，注意月份从 0 开始，需加 1
@@ -186,6 +186,43 @@ export default {
             item.createTime = `${year}年${month}月${day}日`;  // 格式化为 "yyyy年MM月dd日"
             return item;
           });
+          
+          // 在前端进行过滤
+          let filteredData = allData;
+          
+          // 按评分过滤
+          if (this.filters.rating !== null) {
+            const minRating = this.filters.rating;
+            filteredData = filteredData.filter(item => {
+              const score = parseFloat(item.score);
+              return !isNaN(score) && score >= minRating;
+            });
+          }
+          
+          // 按菜系过滤
+          if (this.filters.cuisine !== null) {
+            filteredData = filteredData.filter(item => 
+              item.style === this.filters.cuisine
+            );
+          }
+          
+          // 按价格过滤
+          if (this.filters.price !== null) {
+            filteredData = filteredData.filter(item => 
+              item.price === this.filters.price
+            );
+          }
+          
+          // 按名称搜索
+          if (this.searchQuery && this.searchQuery.trim() !== '') {
+            const query = this.searchQuery.toLowerCase().trim();
+            filteredData = filteredData.filter(item => 
+              item.name && item.name.toLowerCase().includes(query)
+            );
+          }
+          
+          this.qingdiuList = filteredData;
+          console.log(`过滤后显示${filteredData.length}家餐厅，原始数据有${allData.length}家`);
         } else {
           // 如果请求失败
           this.$message({

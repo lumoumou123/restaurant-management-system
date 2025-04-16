@@ -15,9 +15,11 @@
     <div id="app"></div>
     <!-- built files will be auto injected -->
     <script>
-      window.addEventListener('resize', () => {
-        window.location.reload()
-      })
+      if (typeof window !== 'undefined') {
+        window.addEventListener('resize', () => {
+          window.location.reload()
+        })
+      }
     </script>
     <script src="https://imgschool.dcz.cn/vue/2.5.22/vue.min.js"></script>
     <script src="https://imgschool.dcz.cn/vue-router/3.0.1/vue-router.min.js"></script>
@@ -25,6 +27,11 @@
     <script src="https://imgschool.dcz.cn/axios/0.18.0/axios.min.js"></script>
     <script src="https://imgschool.dcz.cn/echarts/5.3.0/echarts.min.js"></script>
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=<%= process.env.VUE_APP_GOOGLE_MAPS_API_KEY %>"></script>
+    <!-- 加载配置文件 -->
+    <script src="./config.js"></script>
+    <!-- 使用config.js中的API密钥 -->
+    <script>
+      document.write('<script src="https://maps.googleapis.com/maps/api/js?key=' + window.GOOGLE_MAPS_API_KEY + '"><\/script>');
+    </script>
   </body>
 </html>

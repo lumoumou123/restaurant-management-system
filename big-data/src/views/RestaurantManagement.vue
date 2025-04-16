@@ -425,26 +425,45 @@ export default {
     },
     
     initializeLocationPicker() {
-      // 检查Google Maps API是否已加载
+      // 修改Google Maps API初始化方式
       if (window.google && window.google.maps) {
         this.initMap();
       } else {
         // 如果Google Maps API尚未加载，添加错误消息
         this.mapError = 'Loading Google Maps...';
-        console.log('Google Maps API not loaded, attempting to load');
+        console.log('Google Maps API not loaded, waiting for load from index.html');
         
-        // 尝试通过动态添加脚本加载
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.VUE_APP_GOOGLE_MAPS_API_KEY}&language=en&region=IE&callback=initLocationPickerMap`;
-        script.async = true;
-        script.defer = true;
+        // 创建一个轮询检查Maps API是否加载完成
+        const checkGoogleMapsLoaded = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(checkGoogleMapsLoaded);
+            this.initMap();
+            console.log('Google Maps API loaded successfully');
+          }
+        }, 500);
         
-        // 全局回调函数
-        window.initLocationPickerMap = () => {
-          this.initMap();
-        };
-        
-        document.head.appendChild(script);
+        // 设置超时，防止无限等待
+        setTimeout(() => {
+          clearInterval(checkGoogleMapsLoaded);
+          if (!window.google || !window.google.maps) {
+            this.mapError = 'Google Maps API failed to load. Attempting to load directly...';
+            console.error('Google Maps API load timeout, attempting direct load');
+            
+            // 备用方案：直接加载
+            const apiKey = window.GOOGLE_MAPS_API_KEY || 'AIzaSyBq7Bh-Qq7cSssxzwhWxdhDXJJMTobt0iI';
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&language=en&region=IE&callback=initLocationPickerMap`;
+            script.async = true;
+            script.defer = true;
+            
+            // 全局回调函数
+            window.initLocationPickerMap = () => {
+              this.initMap();
+            };
+            
+            document.head.appendChild(script);
+          }
+        }, 5000);
       }
     },
     

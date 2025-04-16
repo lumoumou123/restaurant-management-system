@@ -3,7 +3,7 @@ import request from '@/utils/request'
 //获取餐厅列表
 export function getlist(params) {
   return request({ // 提供选择
-      url: `/list`,
+      url: `/api/canteen/list`,
       method: 'get',
       params
   })
