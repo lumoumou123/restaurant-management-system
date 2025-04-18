@@ -9,6 +9,9 @@ import com.hysk.canting.domain.User;
 import com.hysk.canting.mapper.CanteenMapper;
 import com.hysk.canting.mapper.ScoreListMapper;
 import com.hysk.canting.service.UserService;
+import com.hysk.canting.service.CanteenService;
+import com.hysk.canting.service.ViewRecordService;
+import com.hysk.canting.utils.JsonResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +27,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping({"/api/canteen", "/restaurant"})
+@CrossOrigin
 public class CanteenController {
 
     private static final Logger logger = LoggerFactory.getLogger(CanteenController.class);
@@ -36,6 +40,12 @@ public class CanteenController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private CanteenService canteenService;
+
+    @Autowired
+    private ViewRecordService viewRecordService;
 
     /**
      * 计算餐厅的平均评分
@@ -228,9 +238,13 @@ public class CanteenController {
         }
     }
 
-    @PutMapping
+    /**
+     * 更新餐厅信息
+     */
+    @RequestMapping(value = "/update", method = {RequestMethod.PUT, RequestMethod.POST})
     public R<Canteen> updateCanteen(@RequestBody Canteen canteen) {
         try {
+            logger.info("接收到更新餐厅请求: {}", canteen);
             if (canteen.getId() == null) {
                 return R.fail("Canteen ID is required");
             }
@@ -240,16 +254,14 @@ public class CanteenController {
                 return R.fail("Canteen not found");
             }
 
-            // Check if the current user has permission to update this canteen
-            if (!userService.hasPermission(existingCanteen.getOwnerId())) {
-                return R.fail("You don't have permission to update this canteen");
-            }
-
+            // 更新时间
             canteen.setUpdateTime(new Date());
             int result = canteenMapper.updateById(canteen);
             if (result > 0) {
+                logger.info("餐厅更新成功: {}", canteen);
                 return R.ok(canteen);
             }
+            logger.warn("餐厅更新失败");
             return R.fail("Failed to update canteen");
         } catch (Exception e) {
             logger.error("Error updating canteen: {}", e.getMessage());
@@ -489,5 +501,56 @@ public class CanteenController {
             logger.error("获取owner餐厅列表时发生错误: {}", e.getMessage(), e);
             return R.fail("Failed to get owner's restaurants: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/{id}")
+    public JsonResult getCanteenDetail(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            logger.info("=== Start accessing canteen detail ===");
+            logger.info("Canteen ID: {}", id);
+            
+            // 记录浏览
+            String ip = getClientIp(request);
+            String sessionId = request.getSession().getId();
+            logger.info("Request details - IP: {}, Session ID: {}", ip, sessionId);
+            
+            try {
+                viewRecordService.recordView(id.intValue(), ip, sessionId);
+                logger.info("Successfully recorded view for canteen ID: {}", id);
+            } catch (Exception e) {
+                logger.error("Failed to record view: {}", e.getMessage(), e);
+            }
+            
+            // 获取餐厅详情
+            Canteen canteen = canteenService.getById(id);
+            if (canteen == null) {
+                logger.warn("Canteen not found with ID: {}", id);
+                return JsonResult.error("Canteen not found");
+            }
+            
+            // 计算并设置平均评分
+            double avgScore = calculateAverageRating(id);
+            canteen.setScore(String.valueOf(avgScore));
+            
+            logger.info("=== Finished accessing canteen detail ===");
+            return JsonResult.success(canteen);
+        } catch (Exception e) {
+            logger.error("Error getting canteen detail: {}", e.getMessage(), e);
+            return JsonResult.error("Failed to get canteen detail: " + e.getMessage());
+        }
+    }
+    
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 }

@@ -7,6 +7,7 @@ import com.hysk.canting.domain.MenuItem;
 import com.hysk.canting.domain.ScoreList;
 import com.hysk.canting.mapper.*;
 import com.hysk.canting.service.StatisticsService;
+import com.hysk.canting.service.ViewRecordService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,9 @@ public class StatisticsServiceImpl implements StatisticsService {
     @Autowired
     private MenuItemMapper menuItemMapper;
 
+    @Autowired
+    private ViewRecordService viewRecordService;
+
     /**
      * 获取餐厅统计数据
      */
@@ -77,8 +81,11 @@ public class StatisticsServiceImpl implements StatisticsService {
             List<MenuItem> popularDishes = getPopularDishes(canteenId);
             statistics.put("popularDishes", popularDishes);
             
-            // Get views trend
-            Map<String, Long> viewsTrend = calculateViewsTrend(canteenId, startDate, endDate);
+            // Get total views and views trend
+            Integer totalViews = viewRecordService.getViewCount(canteenId.intValue(), startDate, endDate);
+            statistics.put("totalViews", totalViews);
+            
+            List<Map<String, Object>> viewsTrend = viewRecordService.getViewTrend(canteenId.intValue(), startDate, endDate);
             statistics.put("viewsTrend", viewsTrend);
 
             return statistics;
@@ -301,17 +308,42 @@ public class StatisticsServiceImpl implements StatisticsService {
      */
     @Override
     public Map<Integer, Long> calculateRatingDistribution(List<ScoreList> scores) {
+        log.info("计算评分分布, 评分记录数: {}", scores.size());
         Map<Integer, Long> ratingDistribution = new HashMap<>();
+        
+        // 初始化所有评分等级
+        for (int i = 1; i <= 5; i++) {
+            ratingDistribution.put(i, 0L);
+        }
+        
+        // 无评分记录时直接返回
+        if (scores == null || scores.isEmpty()) {
+            log.warn("没有找到评分记录");
+            return ratingDistribution;
+        }
+        
+        log.info("处理评分分布...");
         for (ScoreList score : scores) {
+            log.debug("处理评分: {}", score.getScore());
             if (score.getScore() != null && !score.getScore().isEmpty()) {
                 try {
                     Integer rating = (int) Double.parseDouble(score.getScore());
-                    ratingDistribution.put(rating, ratingDistribution.getOrDefault(rating, 0L) + 1);
+                    log.debug("解析后的评分值: {}", rating);
+                    if (rating >= 1 && rating <= 5) {
+                        ratingDistribution.put(rating, ratingDistribution.getOrDefault(rating, 0L) + 1);
+                        log.debug("评分 {} 计数: {}", rating, ratingDistribution.get(rating));
+                    } else {
+                        log.warn("评分超出范围 (1-5): {}", rating);
+                    }
                 } catch (NumberFormatException e) {
                     log.warn("非法的评分值: {}", score.getScore());
                 }
+            } else {
+                log.debug("跳过空评分");
             }
         }
+        
+        log.info("评分分布计算完成: {}", ratingDistribution);
         return ratingDistribution;
     }
 
@@ -365,5 +397,50 @@ public class StatisticsServiceImpl implements StatisticsService {
         // Placeholder implementation for view count
         // This should be implemented based on actual view tracking data
         return new Random().nextInt(2000) + 200;
+    }
+
+    @Override
+    public Map<String, Integer> getRatingDistribution(Long canteenId) {
+        log.info("开始获取餐厅ID: {} 的评分分布", canteenId);
+        Map<String, Integer> distribution = new HashMap<>();
+        
+        // 初始化所有评分的计数为0
+        for (int i = 1; i <= 5; i++) {
+            distribution.put(String.valueOf(i), 0);
+        }
+        log.info("初始化评分分布Map: {}", distribution);
+        
+        // 从数据库获取评分数据
+        List<ScoreList> scores = scoreListMapper.selectList(
+            new LambdaQueryWrapper<ScoreList>()
+                .eq(ScoreList::getCanteenId, canteenId)
+                .isNotNull(ScoreList::getScore)
+        );
+        log.info("查询到的评分记录数量: {}", scores.size());
+        
+        if (scores.isEmpty()) {
+            log.warn("未找到餐厅ID: {} 的任何评分记录", canteenId);
+            return distribution;
+        }
+        
+        // 统计每个评分的数量
+        for (ScoreList score : scores) {
+            log.debug("处理评分记录 - 餐厅ID: {}, 评分值: {}", score.getCanteenId(), score.getScore());
+            try {
+                int rating = Integer.parseInt(score.getScore());
+                if (rating >= 1 && rating <= 5) {
+                    String key = String.valueOf(rating);
+                    distribution.put(key, distribution.getOrDefault(key, 0) + 1);
+                    log.debug("有效评分: {} 星, 当前计数: {}", rating, distribution.get(key));
+                } else {
+                    log.warn("评分值超出范围 (1-5): {}", rating);
+                }
+            } catch (NumberFormatException e) {
+                log.warn("无效的评分值: {}", score.getScore());
+            }
+        }
+        
+        log.info("最终评分分布结果: {}", distribution);
+        return distribution;
     }
 }

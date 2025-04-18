@@ -62,3 +62,33 @@ export function updateComment(data) {
     data
   })
 }
+
+// 获取餐厅详情
+export function getCanteenDetail(id) {
+  return request({
+    url: `/api/canteen/${id}`,
+    method: 'get',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+}
+
+// 记录餐厅浏览
+export function recordView(canteenId) {
+  return request({
+    url: `/api/canteen/${canteenId}`,
+    method: 'get',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+}
+
+// 获取评分分布
+export function getRatingDistribution(canteenId) {
+  return request({
+    url: `/statistics/rating-distribution/${canteenId}`,
+    method: 'get'
+  })
+}

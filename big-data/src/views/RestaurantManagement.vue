@@ -450,7 +450,7 @@ export default {
             console.error('Google Maps API load timeout, attempting direct load');
             
             // 备用方案：直接加载
-            const apiKey = window.GOOGLE_MAPS_API_KEY || 'AIzaSyBq7Bh-Qq7cSssxzwhWxdhDXJJMTobt0iI';
+            const apiKey = window.GOOGLE_MAPS_API_KEY || process.env.VUE_APP_GOOGLE_MAPS_API_KEY || '';
             const script = document.createElement('script');
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&language=en&region=IE&callback=initLocationPickerMap`;
             script.async = true;

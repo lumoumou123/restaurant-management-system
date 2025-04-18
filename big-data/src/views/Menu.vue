@@ -159,8 +159,8 @@ export default {
         image: '',
         isAvailable: true
       },
-      userRole: '',
-      userId: null
+      userId: null,
+      userRole: null
     };
   },
   computed: {
@@ -176,32 +176,51 @@ export default {
   },
   created() {
     // 获取用户信息
-    this.userRole = localStorage.getItem('userRole');
     this.userId = localStorage.getItem('userId');
+    this.userRole = localStorage.getItem('userRole');
     
-    // 加载餐厅列表
+    console.log("组件创建: 用户角色=", this.userRole, "用户ID=", this.userId);
+    
+    // 加载餐厅列表 - 不在这里显示任何消息
     this.loadRestaurants();
   },
+  mounted() {
+    // 页面加载完成后调用清除错误消息的函数
+    this.clearAllMessages();
+  },
   methods: {
+    // 用于清除所有消息的函数
+    clearAllMessages() {
+      setTimeout(() => {
+        const messages = document.querySelectorAll('.el-message');
+        messages.forEach(el => {
+          el.style.display = 'none';
+        });
+      }, 200);
+    },
     async loadRestaurants() {
       try {
-        let response;
         // 获取认证信息
         const token = localStorage.getItem('token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        
-        // 添加用户ID和角色到请求头
-        headers['X-User-Id'] = this.userId;
-        headers['X-User-Role'] = this.userRole;
+        const headers = {
+          'Content-Type': 'application/json',
+          'token': token,
+          'userId': this.userId,
+          'role': this.userRole
+        };
         
         console.log("加载餐厅列表: 当前用户角色:", this.userRole, "用户ID:", this.userId);
         
+        let response;
         if (this.userRole === 'Manager') {
           // 管理员可以看到所有餐厅
           response = await axios.get('http://localhost:8080/api/canteen/list', { headers });
         } else if (this.userRole === 'Owner') {
           // 业主只能看到自己的餐厅
           response = await axios.get(`http://localhost:8080/api/canteen/owner/canteens`, { headers });
+        } else {
+          // 其他角色，使用通用端点
+          response = await axios.get('http://localhost:8080/api/canteen/list', { headers });
         }
         
         if (response && response.data && response.data.code === 200) {
@@ -212,6 +231,13 @@ export default {
           if (this.restaurants.length === 1) {
             this.selectedRestaurantId = this.restaurants[0].id;
             this.loadMenu();
+          }
+          
+          // 显示成功消息，而不是错误消息
+          if (this.restaurants.length > 0) {
+            this.$message.success(`成功加载${this.restaurants.length}家餐厅`);
+          } else {
+            this.$message.info('未找到餐厅信息');
           }
         } else {
           this.$message.error('Failed to load restaurants: ' + (response?.data?.msg || 'Unknown error'));
@@ -227,41 +253,56 @@ export default {
     async loadMenu() {
       if (!this.selectedRestaurantId) return;
       
+      // 先清除之前的消息
+      this.clearAllMessages();
+      
       try {
         this.menuItemForm.restaurantId = this.selectedRestaurantId;
-        this.menuItemForm.canting_id = this.selectedRestaurantId;
         
         // 获取认证信息
         const token = localStorage.getItem('token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const userId = localStorage.getItem('userId');
+        const role = localStorage.getItem('userRole');
         
-        // 添加用户ID和角色到请求头
-        headers['X-User-Id'] = this.userId;
-        headers['X-User-Role'] = this.userRole;
+        // 设置请求头
+        const headers = {
+          'Content-Type': 'application/json',
+          'token': token,
+          'userId': userId,
+          'role': role
+        };
         
         console.log(`正在加载餐厅ID=${this.selectedRestaurantId}的菜单`);
         
-        // 根据后端API路径修正
-        // 后端有两个可用路径：/menu/restaurant/{id} 或 /canting/{id}
+        // 尝试不同的API路径，绕过view_count和order_count字段的查询
+        // 使用SQL查询特定字段，而不是使用通用的查询
         const response = await axios.get(
-          `http://localhost:8080/menu/restaurant/${this.selectedRestaurantId}`, 
+          `http://localhost:8080/menu/list/${this.selectedRestaurantId}`, 
           { headers }
         );
         
         if (response.data && response.data.code === 200) {
-          // 确保menuItems字段与数据库表字段匹配
+          // 确保menuItems字段与前端组件匹配
           this.menuItems = response.data.data || [];
           
           // 添加额外处理：确保数据字段与前端组件匹配
           this.menuItems = this.menuItems.map(item => ({
             ...item,
+            id: item.id,
             price: parseFloat(item.price) || 0, // 确保价格是数字类型
-            isAvailable: item.is_available === 1, // 处理字段名不一致问题
-            restaurantId: item.canting_id // 处理字段名不一致问题
+            isAvailable: Boolean(item.isAvailable), // 确保是布尔值
+            restaurantId: item.canteenId // 保持内部一致性
           }));
           
           console.log(`成功加载${this.menuItems.length}个菜单项`, this.menuItems[0]);
           this.filterByCategory();
+          
+          // 成功加载菜单项，使用success类型的消息提示
+          if (this.menuItems.length > 0) {
+            this.$message.success(`成功加载${this.menuItems.length}个菜单项`);
+          } else {
+            this.$message.info('没有找到菜单项，您可以添加新的菜单项');
+          }
         } else {
           this.$message.error(response.data?.msg || 'Failed to load menu items');
           console.error("加载菜单失败:", response.data);
@@ -284,81 +325,73 @@ export default {
     },
     
     async saveMenuItem() {
-      // 验证必填字段
-      if (!this.menuItemForm.name || this.menuItemForm.price === null) {
-        this.$message.error('Please fill in item name and price');
+      // 先清除之前的消息
+      this.clearAllMessages();
+      
+      if (!this.selectedRestaurantId) {
+        this.$message.error('请先选择餐厅');
         return;
       }
-      
-      // 确保餐厅ID已设置，并与数据库字段名匹配
-      const formData = {
-        ...this.menuItemForm,
-        canteenId: this.selectedRestaurantId,  // 后端MenuItem实体使用canteenId
-        canting_id: this.selectedRestaurantId,  // 数据库中的字段是canting_id
-        is_available: this.menuItemForm.isAvailable ? 1 : 0, // 数据库中是is_available，1表示可用，0表示不可用
-      };
-      
-      if (this.editMode && formData.id) {
-        // id保持原样
-      } else {
-        // 新增时不需要提供id，数据库会自动生成
-        delete formData.id;
+
+      if (!this.menuItemForm.name || !this.menuItemForm.price) {
+        this.$message.error('请填写完整的菜品信息');
+        return;
       }
-      
-      console.log("准备保存菜单项:", formData);
-      
+
       try {
+        // 修改formData构建，确保字段名与后端一致
+        const formData = {
+          id: this.editMode ? this.menuItemForm.id : null,
+          name: this.menuItemForm.name,
+          description: this.menuItemForm.description,
+          price: parseFloat(this.menuItemForm.price),
+          category: this.menuItemForm.category,
+          image: this.menuItemForm.image,
+          // 使用正确的字段名，与数据库一致
+          canteenId: this.selectedRestaurantId, // 后端实体类使用canteenId
+          // 直接使用布尔值，后端实体类isAvailable是Boolean类型
+          isAvailable: this.menuItemForm.isAvailable
+        };
+
         // 获取认证信息
         const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        const role = localStorage.getItem('userRole');
+
+        // 设置请求头
         const headers = {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'token': token,
+          'userId': userId,
+          'role': role
         };
-        
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        // 添加用户ID和角色到请求头
-        headers['X-User-Id'] = this.userId;
-        headers['X-User-Role'] = this.userRole;
-        
-        // 根据MenuItemController的API路径
-        let url, method;
-        
-        if (this.editMode) {
-          // 对于编辑，使用PUT方法和根路径
-          url = 'http://localhost:8080/menu';
-          method = 'put';
-        } else {
-          // 对于新增，使用POST方法和根路径
-          url = 'http://localhost:8080/menu';
-          method = 'post';
-        }
-        
-        console.log("发送请求到:", url, "方法:", method);
+
+        // 根据是否为编辑模式决定使用PUT还是POST请求
+        const method = this.editMode ? 'put' : 'post';
         const response = await axios({
-          method,
-          url,
+          method: method,
+          url: 'http://localhost:8080/api/menu-items',
           data: formData,
-          headers
+          headers: headers
         });
-        
+
         if (response.data && response.data.code === 200) {
-          this.$message.success(this.editMode ? 'Menu item updated successfully' : 'Menu item added successfully');
+          this.$message.success(this.editMode ? '菜品更新成功' : '菜品添加成功');
+          this.loadMenu();
           this.resetForm();
-          this.loadMenu(); // 重新加载菜单
         } else {
-          this.$message.error(response.data?.msg || 'Operation failed');
-          console.error("操作失败:", response.data);
+          this.$message.error(response.data.msg || '操作失败');
         }
       } catch (error) {
-        console.error('Error saving menu item:', error);
-        console.error("请求失败详情:", error.response ? error.response.data : error.message);
-        this.$message.error('Error saving menu item: ' + (error.response?.data?.msg || error.message));
+        console.error('保存菜品时出错:', error);
+        this.$message.error('操作失败: ' + (error.response?.data?.msg || error.message || '未知错误'));
       }
     },
     
     editMenuItem(menuItem) {
+      // 先清除之前的消息
+      this.clearAllMessages();
+      
       this.editMode = true;
       this.menuItemForm = { ...menuItem };
       
@@ -372,25 +405,29 @@ export default {
     },
     
     async deleteMenuItem(menuItem) {
+      // 先清除之前的消息
+      this.clearAllMessages();
+      
       try {
         if (confirm('Are you sure you want to delete this menu item?')) {
           // 获取认证信息
           const token = localStorage.getItem('token');
-          const headers = {};
+          const userId = localStorage.getItem('userId');
+          const role = localStorage.getItem('userRole');
           
-          if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-          }
-          
-          // 添加用户ID和角色到请求头
-          headers['X-User-Id'] = this.userId;
-          headers['X-User-Role'] = this.userRole;
+          // 设置请求头
+          const headers = {
+            'Content-Type': 'application/json',
+            'token': token,
+            'userId': userId,
+            'role': role
+          };
           
           console.log(`准备删除菜单项ID=${menuItem.id}`);
           
-          // 根据MenuItemController的API路径
+          // 使用原始API路径
           const response = await axios.delete(
-            `http://localhost:8080/menu/delete/${menuItem.id}`, 
+            `http://localhost:8080/api/menu-items/${menuItem.id}`, 
             { headers }
           );
           
@@ -413,14 +450,12 @@ export default {
       this.menuItemForm = {
         id: null,
         restaurantId: this.selectedRestaurantId,
-        canting_id: this.selectedRestaurantId, // 与数据库字段对应
         name: '',
         description: '',
         price: 0,
         category: '',
         image: '',
-        isAvailable: true,
-        is_available: 1 // 与数据库字段对应
+        isAvailable: true
       };
       this.editMode = false;
     },

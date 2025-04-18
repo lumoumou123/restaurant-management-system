@@ -102,13 +102,26 @@
               <div v-if="item.image" class="menu-item-image">
                 <img :src="item.image" :alt="item.name" @error="handleImageError">
               </div>
-              <el-tag 
-                size="mini" 
-                :type="item.isAvailable ? 'success' : 'danger'"
-                class="menu-item-status"
-              >
-                {{ item.isAvailable ? 'Available' : 'Not Available' }}
-              </el-tag>
+              <div class="menu-item-footer">
+                <el-tag 
+                  size="mini" 
+                  :type="item.isAvailable ? 'success' : 'danger'"
+                  class="menu-item-status"
+                >
+                  {{ item.isAvailable ? 'Available' : 'Not Available' }}
+                </el-tag>
+                <div class="menu-item-likes">
+                  <el-button 
+                    type="text" 
+                    @click="likeMenuItem(item)"
+                    :disabled="likedItems.includes(item.id)"
+                    class="like-button"
+                  >
+                    <i class="el-icon-star-on"></i>
+                  </el-button>
+                  <span class="likes-count">{{ item.likes || 0 }} likes</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -168,7 +181,7 @@
 </template>
 
 <script>
-import { rate, getComments, addComment, deleteComment } from '@/api'
+import { rate, getComments, addComment, deleteComment, recordView } from '@/api'
 import axios from 'axios'
 import Login from '../Login.vue'
 
@@ -201,6 +214,7 @@ export default {
       mapError: null,
       showLoginDialog: false,
       menuItems: [], // 存储菜单项
+      likedItems: [], // 用于存储已点赞的菜品ID
       activeTab: 'info' // 控制当前激活的标签页
     };
   },
@@ -256,7 +270,7 @@ export default {
           console.error('Google Maps API load timeout, attempting direct load');
           
           // 备用方案：直接加载
-          const apiKey = window.GOOGLE_MAPS_API_KEY || 'AIzaSyBq7Bh-Qq7cSssxzwhWxdhDXJJMTobt0iI';
+          const apiKey = window.GOOGLE_MAPS_API_KEY || process.env.VUE_APP_GOOGLE_MAPS_API_KEY || '';
           const script = document.createElement('script');
           script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&language=en&region=IE&callback=initGoogleMap`;
           script.async = true;
@@ -432,6 +446,19 @@ export default {
           this.loadComments(); // 加载评论
           // 预加载菜单数据
           this.loadMenu();
+
+          // 记录浏览
+          recordView(location.id)
+            .then(res => {
+              if (res.code === 200) {
+                console.log('浏览记录成功');
+              } else {
+                console.warn('浏览记录失败:', res.msg);
+              }
+            })
+            .catch(error => {
+              console.error('浏览记录出错:', error);
+            });
         };
 
         // 确保投影已准备好
@@ -666,6 +693,47 @@ export default {
         console.error('Error loading current rating:', error);
         this.$message.error('Failed to refresh rating');
       }
+    },
+    // 点赞功能
+    likeMenuItem(item) {
+      if (!item || !item.id) {
+        console.error('无法点赞：菜品ID为空');
+        return;
+      }
+      
+      // 检查用户是否登录
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        this.$message.warning('Please login to like dishes');
+        return;
+      }
+      
+      console.log('正在点赞菜品:', item.name, '(ID:', item.id, ')');
+      axios.post(`http://localhost:8080/menu/like/${item.id}`)
+        .then(res => {
+          if (res.data && res.data.code === 200) {
+            // 更新菜品点赞数
+            const updatedItem = res.data.data;
+            console.log('点赞成功，当前点赞数:', updatedItem.likes);
+            
+            // 更新当前菜品点赞数
+            const index = this.menuItems.findIndex(i => i.id === item.id);
+            if (index !== -1) {
+              this.menuItems[index].likes = updatedItem.likes;
+              // 添加到已点赞列表
+              this.likedItems.push(item.id);
+            }
+            
+            this.$message.success(`You liked ${item.name}`);
+          } else {
+            console.error('点赞失败:', res.data?.msg);
+            this.$message.error(res.data?.msg || 'Failed to like dish');
+          }
+        })
+        .catch(error => {
+          console.error('点赞请求失败:', error);
+          this.$message.error('Error liking dish: ' + (error.response?.data?.msg || error.message));
+        });
     },
   },
   computed: {
@@ -955,8 +1023,35 @@ export default {
   object-fit: cover;
 }
 
-.menu-item-status {
+.menu-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 8px;
+}
+
+.menu-item-likes {
+  display: flex;
+  align-items: center;
+}
+
+.like-button {
+  padding: 0;
+  margin-right: 5px;
+}
+
+.like-button i {
+  color: #F56C6C;
+  font-size: 16px;
+}
+
+.likes-count {
+  font-size: 12px;
+  color: #666;
+}
+
+.el-icon-star-on {
+  margin-right: 2px;
 }
 
 .coordinates {

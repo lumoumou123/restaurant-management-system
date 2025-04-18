@@ -185,4 +185,62 @@ public class MenuItemController {
             return R.fail("Failed to get menu items: " + e.getMessage());
         }
     }
+
+    /**
+     * 点赞菜品接口
+     */
+    @PostMapping("/like/{id}")
+    public R<MenuItem> likeMenuItem(@PathVariable Long id) {
+        try {
+            if (id == null) {
+                return R.fail("Menu item ID is required");
+            }
+            
+            MenuItem item = menuItemMapper.selectById(id);
+            if (item == null) {
+                return R.fail("Menu item not found");
+            }
+            
+            // 增加点赞数
+            Integer currentLikes = item.getLikes();
+            if (currentLikes == null) {
+                currentLikes = 0;
+            }
+            item.setLikes(currentLikes + 1);
+            
+            // 更新数据库
+            menuItemMapper.updateById(item);
+            
+            log.info("菜品[{}]点赞成功，当前点赞数：{}", item.getName(), item.getLikes());
+            return R.ok(item);
+        } catch (Exception e) {
+            log.error("点赞菜品失败: {}", e.getMessage());
+            return R.fail("点赞失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取餐厅流行菜品（按点赞数排序）
+     */
+    @GetMapping("/popular/{canteenId}")
+    public R<List<MenuItem>> getPopularItems(@PathVariable Long canteenId) {
+        try {
+            if (canteenId == null) {
+                return R.fail("Canteen ID is required");
+            }
+            
+            // 查询该餐厅的菜品，按点赞数降序排序，取前5个
+            LambdaQueryWrapper<MenuItem> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(MenuItem::getCanteenId, canteenId)
+                        .orderByDesc(MenuItem::getLikes)
+                        .last("LIMIT 5");
+            List<MenuItem> popularItems = menuItemMapper.selectList(queryWrapper);
+            
+            log.info("获取餐厅[{}]流行菜品：找到{}个菜品", canteenId, popularItems.size());
+            return R.ok(popularItems);
+        } catch (Exception e) {
+            log.error("获取流行菜品失败: {}", e.getMessage());
+            return R.fail("获取流行菜品失败: " + e.getMessage());
+        }
+    }
 }

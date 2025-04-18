@@ -40,9 +40,12 @@ public class MenuItem {
     @TableField(exist = false)
     private Date updateTime;
 
-    @TableField("view_count")
+    @TableField(exist = false)
     private Integer viewCount;
 
-    @TableField("order_count")
+    @TableField(exist = false)
     private Integer orderCount;
+
+    @TableField("likes")
+    private Integer likes = 0;
 } 

@@ -41,5 +41,14 @@ mvnw.cmd
 # 测试覆盖率
 /coverage/
 
-# 个人设置
+# 个人设置和敏感信息
 application-dev.properties 
+application.properties
+!application.properties.example
+
+# Google API keys and sensitive credentials
+google_maps_api.js
+**/google_credentials.json
+
+# 数据库配置
+canting/src/main/resources/application-*.properties 

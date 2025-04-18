@@ -55,4 +55,12 @@ public interface StatisticsService {
      * @return 评论时间线
      */
     Map<String, Long> calculateCommentsTimeline(List<Comment> comments);
+
+    /**
+     * 获取评分分布
+     *
+     * @param canteenId 餐厅ID
+     * @return 评分分布
+     */
+    Map<String, Integer> getRatingDistribution(Long canteenId);
 } 
