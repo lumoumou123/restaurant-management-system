@@ -365,7 +365,7 @@ export default {
         // 返回空图表配置
         return {
           title: {
-            text: '暂无流行菜品数据',
+            text: 'No Popular Dishes Data',
             left: 'center',
             textStyle: {
               fontSize: 14
@@ -391,7 +391,7 @@ export default {
       // 图表配置
       return {
         title: {
-          text: '流行菜品点赞排名',
+          text: 'Popular Dishes by Likes',
           left: 'center',
           textStyle: {
             fontSize: 14
@@ -402,7 +402,7 @@ export default {
           axisPointer: {
             type: 'shadow'
           },
-          formatter: '{b}: {c}个点赞'
+          formatter: '{b}: {c}'
         },
         grid: {
           top: 50,
@@ -424,16 +424,27 @@ export default {
         },
         yAxis: {
           type: 'value',
-          name: '点赞数',
           min: 0,
-          interval: 1
+          name: '',
+          nameTextStyle: {
+            padding: [0, 0, 0, 30]
+          }
         },
         series: [
           {
+            name: '',
             type: 'bar',
             data: dishLikes,
             itemStyle: {
-              color: '#67C23A'
+              color: (params) => {
+                return colors[params.dataIndex % colors.length];
+              }
+            },
+            barWidth: '40%',
+            label: {
+              show: true,
+              position: 'top',
+              formatter: '{c}'
             }
           }
         ]
@@ -446,7 +457,7 @@ export default {
         // 返回空图表配置
         return {
           title: {
-            text: '评论时间线',
+            text: 'Comments Timeline',
             left: 'center',
             textStyle: {
               fontSize: 14
@@ -454,18 +465,18 @@ export default {
           },
           tooltip: {
             trigger: 'axis',
-            formatter: '{b}: {c}条评论'
+            formatter: '{b}: {c} comments'
           },
           xAxis: {
             type: 'category',
-            data: ['暂无数据'],
+            data: ['No data'],
             axisLabel: {
               rotate: 45
             }
           },
           yAxis: {
             type: 'value',
-            name: '评论数',
+            name: 'Comments',
             minInterval: 1
           },
           series: [{
@@ -506,7 +517,7 @@ export default {
       // 返回图表配置
       return {
         title: {
-          text: '评论时间线',
+          text: 'Comments Timeline',
           left: 'center',
           textStyle: {
             fontSize: 14
@@ -514,7 +525,7 @@ export default {
         },
         tooltip: {
           trigger: 'axis',
-          formatter: '{b}: {c}条评论'
+          formatter: '{b}: {c} comments'
         },
         grid: {
           left: '3%',
@@ -895,11 +906,11 @@ export default {
       
       // 创建模拟热门菜品数据
       const popularDishes = [
-        { name: '黄焖鸡米饭', orderCount: 85, rating: 4.7 },
-        { name: '宫保鸡丁', orderCount: 63, rating: 4.5 },
-        { name: '鱼香肉丝', orderCount: 58, rating: 4.3 },
-        { name: '回锅肉', orderCount: 45, rating: 4.2 },
-        { name: '麻婆豆腐', orderCount: 42, rating: 4.0 }
+        { name: 'Braised Chicken Rice', orderCount: 85, rating: 4.7 },
+        { name: 'Kung Pao Chicken', orderCount: 63, rating: 4.5 },
+        { name: 'Fish-flavored Pork', orderCount: 58, rating: 4.3 },
+        { name: 'Twice-cooked Pork', orderCount: 45, rating: 4.2 },
+        { name: 'Mapo Tofu', orderCount: 42, rating: 4.0 }
       ];
       
       // 设置模拟统计数据
@@ -1361,11 +1372,11 @@ export default {
           if (this.statistics.popularDishes.length === 0) {
             console.log("无真实菜品数据，创建模拟数据");
             this.statistics.popularDishes = [
-              { name: '黄焖鸡米饭', likes: 15 },
-              { name: '宫保鸡丁', likes: 12 },
-              { name: '鱼香肉丝', likes: 10 },
-              { name: '回锅肉', likes: 8 },
-              { name: '麻婆豆腐', likes: 6 }
+              { name: 'Braised Chicken Rice', likes: 15 },
+              { name: 'Kung Pao Chicken', likes: 12 },
+              { name: 'Fish-flavored Pork', likes: 10 },
+              { name: 'Twice-cooked Pork', likes: 8 },
+              { name: 'Mapo Tofu', likes: 6 }
             ];
             console.log('使用模拟数据:', this.statistics.popularDishes);
           }
@@ -1379,11 +1390,11 @@ export default {
           console.error('加载流行菜品失败:', response.data);
           // 使用模拟数据
           this.statistics.popularDishes = [
-            { name: '黄焖鸡米饭', likes: 15 },
-            { name: '宫保鸡丁', likes: 12 },
-            { name: '鱼香肉丝', likes: 10 },
-            { name: '回锅肉', likes: 8 },
-            { name: '麻婆豆腐', likes: 6 }
+            { name: 'Braised Chicken Rice', likes: 15 },
+            { name: 'Kung Pao Chicken', likes: 12 },
+            { name: 'Fish-flavored Pork', likes: 10 },
+            { name: 'Twice-cooked Pork', likes: 8 },
+            { name: 'Mapo Tofu', likes: 6 }
           ];
           console.log('由于API错误使用模拟数据');
           this.$nextTick(() => {
@@ -1394,11 +1405,11 @@ export default {
         console.error('加载流行菜品出错:', error);
         // 使用模拟数据
         this.statistics.popularDishes = [
-          { name: '黄焖鸡米饭', likes: 15 },
-          { name: '宫保鸡丁', likes: 12 },
-          { name: '鱼香肉丝', likes: 10 },
-          { name: '回锅肉', likes: 8 },
-          { name: '麻婆豆腐', likes: 6 }
+          { name: 'Braised Chicken Rice', likes: 15 },
+          { name: 'Kung Pao Chicken', likes: 12 },
+          { name: 'Fish-flavored Pork', likes: 10 },
+          { name: 'Twice-cooked Pork', likes: 8 },
+          { name: 'Mapo Tofu', likes: 6 }
         ];
         console.log('由于异常使用模拟数据');
         this.$nextTick(() => {
@@ -1910,7 +1921,7 @@ export default {
       const topDishes = this.statistics.popularDishes.slice(0, 5);
       
       topDishes.forEach((dish, index) => {
-        dishNames.push(dish.name || `菜品${index+1}`);
+        dishNames.push(dish.name || `Dish ${index+1}`);
         likesCount.push(dish.likes || 0);
       });
       
@@ -1928,7 +1939,7 @@ export default {
           axisPointer: {
             type: 'shadow'
           },
-          formatter: '{b}: {c}个点赞'
+          formatter: '{b}: {c} likes'
         },
         grid: {
           left: '3%',
@@ -1950,14 +1961,14 @@ export default {
         yAxis: {
           type: 'value',
           min: 0,
-          name: '点赞数',
+          name: '',
           nameTextStyle: {
             padding: [0, 0, 0, 30]
           }
         },
         series: [
           {
-            name: '点赞数',
+            name: 'likes',
             type: 'bar',
             data: likesCount,
             itemStyle: {
@@ -2062,7 +2073,7 @@ export default {
           },
           tooltip: {
             trigger: 'axis',
-            formatter: '{b}: {c}'  // 移除"条评论"文字
+            formatter: '{b}: {c} comments'  // 移除"条评论"文字
           },
           grid: {
             left: '3%',
