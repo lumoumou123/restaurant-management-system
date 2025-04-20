@@ -1026,7 +1026,16 @@ export default {
       
       // 确保popularDishes是数组
       if (!Array.isArray(data.popularDishes)) {
+        console.log('热门菜品不是数组，初始化为空数组');
         data.popularDishes = [];
+      } else {
+        console.log(`初始热门菜品数据包含${data.popularDishes.length}个菜品`);
+      }
+      
+      // 修复 menuItemCount 与 popularDishes 之间的不一致
+      if (data.menuItemCount === 0 && data.popularDishes && data.popularDishes.length > 0) {
+        console.log(`menuItemCount为0但有${data.popularDishes.length}个热门菜品，更新menuItemCount`);
+        data.menuItemCount = data.popularDishes.length;
       }
       
       // 确保commentsTimeline是数组
@@ -1056,7 +1065,7 @@ export default {
         data.commentsTimeline = this.generateMockCommentsTimeline();
       }
       
-      console.log('处理后的评论时间线数据:', data.commentsTimeline);
+      console.log('处理后的数据结构:', data);
       
       return data;
     },
@@ -1248,6 +1257,10 @@ export default {
         return;
       }
       
+      console.log("===== 开始加载菜品数据 =====");
+      console.log("当前总菜品数量显示为:", this.statistics.menuItemCount || 0);
+      console.log("当前热门菜品数组:", JSON.stringify(this.statistics.popularDishes || []));
+      
       try {
         // 获取认证信息
         const token = localStorage.getItem('token');
@@ -1263,29 +1276,37 @@ export default {
         headers['X-User-Id'] = this.userId;
         headers['X-User-Role'] = this.userRole;
         
-        console.log(`正在获取餐厅ID=${this.selectedRestaurant}的热门菜品`);
+        console.log(`正在获取餐厅ID=${this.selectedRestaurant}的热门菜品，请求头:`, headers);
         
         // 使用正确的API端点获取菜品数据
         // 如果菜单API不可用，尝试使用备用路径
         let response;
         try {
+          console.log("尝试第一个API端点: /menu/popular/");
           response = await axios.get(
             `http://localhost:8080/menu/popular/${this.selectedRestaurant}`,
             { headers }
           );
+          console.log("第一个API端点成功返回数据");
         } catch (err) {
-          console.log("尝试备用API端点");
+          console.log("第一个API端点失败:", err.message);
+          console.log("尝试备用API端点: /api/menu-items/popular/");
           response = await axios.get(
             `http://localhost:8080/api/menu-items/popular/${this.selectedRestaurant}`,
             { headers }
           );
+          console.log("备用API端点成功返回数据");
         }
         
         console.log('流行菜品API响应:', response.data);
+        console.log('返回状态码:', response.data.code);
+        console.log('返回数据类型:', typeof response.data.data);
+        console.log('返回数据长度:', response.data.data ? response.data.data.length : 0);
         
         if (response.data && response.data.code === 200) {
           // 使用API返回的菜品数据
           const menuItems = response.data.data || [];
+          console.log('API返回的菜品数据:', menuItems);
           
           // 如果没有菜品数据，尝试加载所有菜品并按点赞排序
           if (menuItems.length === 0) {
@@ -1295,8 +1316,11 @@ export default {
               { headers }
             );
             
+            console.log('所有菜品API响应:', allMenuResponse.data);
+            
             if (allMenuResponse.data && allMenuResponse.data.code === 200) {
               const allMenuItems = allMenuResponse.data.data || [];
+              console.log('所有菜品数据数量:', allMenuItems.length);
               
               // 按点赞数排序
               this.statistics.popularDishes = allMenuItems
@@ -1307,6 +1331,8 @@ export default {
                   likes: item.likes || 0,
                   id: item.id
                 }));
+              
+              console.log('从所有菜品中排序后的热门菜品:', this.statistics.popularDishes);
             }
           } else {
             // 使用API返回的已排序菜品
@@ -1315,10 +1341,21 @@ export default {
               likes: dish.likes || 0,
               id: dish.id
             }));
+            
+            console.log('使用API直接返回的热门菜品:', this.statistics.popularDishes);
           }
           
           console.log(`成功加载${this.statistics.popularDishes.length}个流行菜品:`, 
                       JSON.stringify(this.statistics.popularDishes));
+          
+          // 同步更新menuItemCount以保持一致性
+          if (this.statistics.popularDishes && this.statistics.popularDishes.length > 0) {
+            // 至少有一道菜，确保menuItemCount不为0
+            if (!this.statistics.menuItemCount || this.statistics.menuItemCount === 0) {
+              console.log('更新menuItemCount为至少有菜品数量');
+              this.statistics.menuItemCount = this.statistics.popularDishes.length;
+            }
+          }
                       
           // 如果仍然没有数据，创建模拟数据用于演示
           if (this.statistics.popularDishes.length === 0) {
@@ -1330,10 +1367,12 @@ export default {
               { name: '回锅肉', likes: 8 },
               { name: '麻婆豆腐', likes: 6 }
             ];
+            console.log('使用模拟数据:', this.statistics.popularDishes);
           }
           
           // 渲染菜品图表
           this.$nextTick(() => {
+            console.log('准备渲染热门菜品图表，数据:', this.statistics.popularDishes);
             this.renderPopularDishesChart();
           });
         } else {
@@ -1346,6 +1385,7 @@ export default {
             { name: '回锅肉', likes: 8 },
             { name: '麻婆豆腐', likes: 6 }
           ];
+          console.log('由于API错误使用模拟数据');
           this.$nextTick(() => {
             this.renderPopularDishesChart();
           });
@@ -1360,10 +1400,15 @@ export default {
           { name: '回锅肉', likes: 8 },
           { name: '麻婆豆腐', likes: 6 }
         ];
+        console.log('由于异常使用模拟数据');
         this.$nextTick(() => {
           this.renderPopularDishesChart();
         });
       }
+      
+      console.log("===== 菜品加载完成 =====");
+      console.log("最终总菜品数量:", this.statistics.menuItemCount || 0);
+      console.log("最终热门菜品数组:", JSON.stringify(this.statistics.popularDishes || []));
     },
     formatDate(dateString) {
       if (!dateString) return '';
@@ -1835,7 +1880,19 @@ export default {
       console.log('评分分布图表渲染完成');
     },
     renderPopularDishesChart() {
-      console.log("渲染热门菜品图表");
+      console.log("开始渲染热门菜品图表");
+      
+      // 检查menuItemCount和popularDishes的一致性
+      console.log("当前menuItemCount:", this.statistics.menuItemCount);
+      console.log("当前popularDishes长度:", this.statistics.popularDishes ? this.statistics.popularDishes.length : 0);
+      
+      // 如果显示menuItemCount为0但有热门菜品，修正menuItemCount
+      if ((this.statistics.menuItemCount === 0 || !this.statistics.menuItemCount) && 
+          this.statistics.popularDishes && 
+          this.statistics.popularDishes.length > 0) {
+        console.log("发现不一致：menuItemCount为0但有热门菜品，修正menuItemCount");
+        this.statistics.menuItemCount = this.statistics.popularDishes.length;
+      }
       
       if (!this.statistics.popularDishes || this.statistics.popularDishes.length === 0) {
         console.log("无热门菜品数据可显示");
@@ -1860,7 +1917,7 @@ export default {
       // 设置图表选项
       const option = {
         title: {
-          text: '热门菜品点赞排名',
+          text: '',
           left: 'center',
           textStyle: {
             fontSize: 14

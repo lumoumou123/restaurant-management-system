@@ -1,15 +1,21 @@
 package com.hysk.canting.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.io.File;
 
 /**
  * Web配置类
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
 
     /**
      * 配置视图控制器
@@ -27,7 +33,18 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 静态资源目录映射
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/");
+        
+        // 上传目录映射 - 使用绝对路径配置
+        File uploadDirectory = new File(uploadDir);
+        String uploadPath = "file:" + uploadDirectory.getAbsolutePath() + File.separator;
+        
+        // 将/images/路径映射到上传目录
+        registry.addResourceHandler("/images/**")
+                .addResourceLocations(uploadPath);
+        
+        System.out.println("已配置静态资源映射: /images/** -> " + uploadPath);
     }
 } 

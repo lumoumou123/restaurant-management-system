@@ -11,6 +11,7 @@ A comprehensive restaurant management system with menu management and map integr
 - **User Management**: Login, registration, and role-based access
 - **Comments System**: Users can leave comments for restaurants
 - **Rating System**: Rate restaurants and view average ratings
+- **Image Upload**: Upload and manage restaurant and menu item images
 
 ## Technologies
 
@@ -49,6 +50,7 @@ mvn install
 3. Configure database
 - Import SQL files from `canting/sql/` directory
 - Update database connection in `application.properties`
+- **Note**: For image storage, ensure the `image` column in tables is of type `TEXT` or `LONGTEXT` to accommodate Base64 encoded images
 
 4. Run backend server
 ```

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hysk.canting.mapper.MenuItemMapper">
+
+    <!-- 查询结果映射，包含图片字段 -->
+    <resultMap id="BaseResultMap" type="com.hysk.canting.domain.MenuItem">
+        <id column="id" property="id"/>
+        <result column="canting_id" property="canteenId"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="price" property="price"/>
+        <result column="category" property="category"/>
+        <result column="image" property="image"/>
+        <result column="is_available" property="isAvailable"/>
+        <result column="create_time" property="createTime"/>
+        <result column="likes" property="likes"/>
+    </resultMap>
+
+    <!-- 基础列，不包含长文本字段 -->
+    <sql id="Base_Column_List">
+        id, canting_id, name, price, category, is_available, create_time, likes
+    </sql>
+
+    <!-- 全部列，包括长文本字段 -->
+    <sql id="Full_Column_List">
+        id, canting_id, name, description, price, category, image, is_available, create_time, likes
+    </sql>
+
+    <!-- 根据餐厅ID查询菜单项 -->
+    <select id="selectByCanteenId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Full_Column_List"/>
+        FROM menu_item
+        WHERE canting_id = #{canteenId}
+    </select>
+
+    <!-- 根据ID查询菜单项 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Full_Column_List"/>
+        FROM menu_item
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入菜单项 -->
+    <insert id="insert" parameterType="com.hysk.canting.domain.MenuItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO menu_item (
+            canting_id, name, description, price, category, image, is_available, create_time, likes
+        ) VALUES (
+            #{canteenId}, #{name}, #{description}, #{price}, #{category}, #{image}, #{isAvailable}, #{createTime}, #{likes}
+        )
+    </insert>
+
+    <!-- 更新菜单项 -->
+    <update id="update" parameterType="com.hysk.canting.domain.MenuItem">
+        UPDATE menu_item
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="image != null">image = #{image},</if>
+            <if test="isAvailable != null">is_available = #{isAvailable},</if>
+            <if test="likes != null">likes = #{likes}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除菜单项 -->
+    <delete id="deleteById">
+        DELETE FROM menu_item WHERE id = #{id}
+    </delete>
+
+    <!-- 在mapper标签中添加selectAll查询 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Full_Column_List"/>
+        FROM menu_item
+    </select>
+</mapper> 

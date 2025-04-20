@@ -289,11 +289,10 @@ public class StatisticsServiceImpl implements StatisticsService {
      * 生成热门菜单项数据
      */
     private List<MenuItem> getPopularDishes(Long canteenId) {
-        // Implementation for getting popular dishes
-        // This could be based on order frequency, ratings, etc.
+        // Implementation for getting popular dishes based on likes count
         LambdaQueryWrapper<MenuItem> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(MenuItem::getCanteenId, canteenId)
-                    .orderByDesc(MenuItem::getPrice); // As a simple example, order by price
+                    .orderByDesc(MenuItem::getLikes); // Order by likes instead of price for real popularity
         
         List<MenuItem> allDishes = menuItemMapper.selectList(queryWrapper);
         

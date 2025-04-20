@@ -35,8 +35,18 @@
           </el-select>
         </el-form-item>
         
-        <el-form-item label="Image URL">
-          <el-input v-model="restaurantForm.image" placeholder="Restaurant Image URL"></el-input>
+        <el-form-item label="Restaurant Image">
+          <el-upload
+            class="avatar-uploader"
+            action="#"
+            :http-request="handleRestaurantImageUpload"
+            :show-file-list="false"
+            :before-upload="beforeImageUpload">
+            <img v-if="restaurantForm.image && restaurantForm.image.startsWith('data:image')" :src="restaurantForm.image" class="avatar">
+            <img v-else-if="restaurantForm.image" :src="restaurantForm.image" class="avatar" @error="handleImageError">
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+          </el-upload>
+          <div class="upload-tip">Click to upload restaurant image (recommended size: 500x300px, max 1MB)</div>
         </el-form-item>
         
         <el-form-item label="Location">
@@ -422,6 +432,54 @@ export default {
     
     goBack() {
       this.$router.push('/');
+    },
+    
+    handleRestaurantImageUpload(event) {
+      console.log('handleRestaurantImageUpload被调用，接收到文件:', event.file.name);
+      const file = event.file;
+      try {
+        // 使用FileReader显示预览
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          console.log('FileReader成功读取文件，Base64数据长度:', e.target.result.length);
+          this.restaurantForm.image = e.target.result; // 将Base64数据存到表单对象中
+          console.log('图片已转换为Base64格式预览，已设置restaurantForm.image');
+        };
+        reader.onerror = (e) => {
+          console.error('FileReader读取文件失败:', e);
+          this.$message.error('图片文件读取失败');
+        };
+        console.log('开始调用readAsDataURL');
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('处理餐厅图片上传出错:', error);
+      }
+    },
+    
+    beforeImageUpload(file) {
+      console.log('beforeImageUpload被调用，检查文件:', file.name, '类型:', file.type, '大小:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+      const isJPG = file.type === 'image/jpeg';
+      const isPNG = file.type === 'image/png';
+      const isLt2M = file.size / 1024 / 1024 < 1;
+
+      if (!isJPG && !isPNG) {
+        console.error('文件格式验证失败: 不是JPG或PNG格式', file.type);
+        this.$message.error('Upload image must be JPG or PNG format!');
+        return false;
+      }
+      if (!isLt2M) {
+        console.error('文件大小验证失败: 文件过大', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+        this.$message.error('Image size cannot exceed 1MB!');
+        return false;
+      }
+      console.log('文件验证通过，准备上传');
+      return (isJPG || isPNG) && isLt2M;
+    },
+    
+    handleImageError(event) {
+      console.error('餐厅图片加载失败');
+      this.$message.warning('Failed to load restaurant image. Please upload a new one.');
+      event.target.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
     },
     
     initializeLocationPicker() {
@@ -827,5 +885,44 @@ h3 {
   background-color: #409EFF;
   border-color: #409EFF;
   color: white;
+}
+
+/* 图片上传相关样式 */
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  width: 300px;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: #409EFF;
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 100%;
+  height: 100%;
+  line-height: 180px;
+  text-align: center;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 7px;
 }
 </style> 

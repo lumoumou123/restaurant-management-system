@@ -183,7 +183,7 @@ export default {
             const year = date.getFullYear();  // 获取年份
             const month = (date.getMonth() + 1).toString().padStart(2, '0');  // 获取月份，注意月份从 0 开始，需加 1
             const day = date.getDate().toString().padStart(2, '0');  // 获取日期
-            item.createTime = `${year}年${month}月${day}日`;  // 格式化为 "yyyy年MM月dd日"
+            item.createTime = `${year}-${month}-${day}`;  // Format as "yyyy-MM-dd"
             return item;
           });
           
