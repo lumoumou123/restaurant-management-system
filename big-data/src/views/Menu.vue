@@ -56,7 +56,7 @@
             </el-select>
           </el-form-item>
           
-          <el-form-item label="菜品图片">
+          <el-form-item label="Item Image">
             <el-upload
               class="avatar-uploader"
               action="#"
@@ -66,7 +66,7 @@
               <img v-if="imageUrl" :src="imageUrl" class="avatar">
               <i v-else class="el-icon-plus avatar-uploader-icon"></i>
             </el-upload>
-            <div class="upload-tip">点击上传菜品图片（建议尺寸: 300x300px，不超过1MB）</div>
+            <div class="upload-tip">Click to upload image (recommended size: 300x300px, max 1MB)</div>
           </el-form-item>
           
           <el-form-item label="Available">
@@ -106,7 +106,7 @@
           style="width: 100%"
           :row-class-name="getRowClassName"
         >
-          <el-table-column label="图片" width="100">
+          <el-table-column label="Image" width="100">
             <template slot-scope="scope">
               <img 
                 v-if="scope.row.image" 
@@ -114,7 +114,7 @@
                 class="menu-item-image"
                 @error="handleImageDisplayError($event, scope.row)"
               />
-              <span v-else class="no-image">无图片</span>
+              <span v-else class="no-image">No image</span>
             </template>
           </el-table-column>
           <el-table-column prop="name" label="Name" min-width="150"></el-table-column>
@@ -201,7 +201,7 @@ export default {
     this.userId = localStorage.getItem('userId');
     this.userRole = localStorage.getItem('userRole');
     
-    console.log("组件创建: 用户角色=", this.userRole, "用户ID=", this.userId);
+    console.log("Component created: User role=", this.userRole, "User ID=", this.userId);
     
     // 加载餐厅列表 - 不在这里显示任何消息
     this.loadRestaurants();
@@ -231,7 +231,7 @@ export default {
           'role': this.userRole
         };
         
-        console.log("加载餐厅列表: 当前用户角色:", this.userRole, "用户ID:", this.userId);
+        console.log("Loading restaurant list: Current user role:", this.userRole, "User ID:", this.userId);
         
         let response;
         if (this.userRole === 'Manager') {
@@ -247,7 +247,7 @@ export default {
         
         if (response && response.data && response.data.code === 200) {
           this.restaurants = response.data.data || [];
-          console.log(`成功加载${this.restaurants.length}家餐厅`);
+          console.log(`Successfully loaded ${this.restaurants.length} restaurants`);
           
           // 如果只有一个餐厅，自动选择它
           if (this.restaurants.length === 1) {
@@ -257,13 +257,13 @@ export default {
           
           // 显示成功消息，而不是错误消息
           if (this.restaurants.length > 0) {
-            this.$message.success(`成功加载${this.restaurants.length}家餐厅`);
+            this.$message.success(`Successfully loaded ${this.restaurants.length} restaurants`);
           } else {
-            this.$message.info('未找到餐厅信息');
+            this.$message.info('No restaurant information found');
           }
         } else {
           this.$message.error('Failed to load restaurants: ' + (response?.data?.msg || 'Unknown error'));
-          console.error("加载餐厅失败:", response?.data);
+          console.error("Failed to load restaurants:", response?.data);
         }
       } catch (error) {
         console.error('Error loading restaurants:', error);
@@ -294,7 +294,7 @@ export default {
           'role': role
         };
         
-        console.log(`正在加载餐厅ID=${this.selectedRestaurantId}的菜单`);
+        console.log(`Loading menu for restaurant ID=${this.selectedRestaurantId}`);
         
         // 尝试不同的API路径，绕过view_count和order_count字段的查询
         // 使用SQL查询特定字段，而不是使用通用的查询
@@ -317,18 +317,18 @@ export default {
             image: this.validateImageData(item.image, item.name) // 验证图片数据
           }));
           
-          console.log(`成功加载${this.menuItems.length}个菜单项`, this.menuItems[0]);
+          console.log(`Successfully loaded ${this.menuItems.length} menu items`, this.menuItems[0]);
           this.filterByCategory();
           
           // 成功加载菜单项，使用success类型的消息提示
           if (this.menuItems.length > 0) {
-            this.$message.success(`成功加载${this.menuItems.length}个菜单项`);
+            this.$message.success(`Successfully loaded ${this.menuItems.length} menu items`);
           } else {
-            this.$message.info('没有找到菜单项，您可以添加新的菜单项');
+            this.$message.info('No menu items found, you can add new items');
           }
         } else {
           this.$message.error(response.data?.msg || 'Failed to load menu items');
-          console.error("加载菜单失败:", response.data);
+          console.error("Failed to load menu:", response.data);
         }
       } catch (error) {
         console.error('Error loading menu:', error);
@@ -340,16 +340,16 @@ export default {
     // 验证图片数据
     validateImageData(imageData, itemName) {
       if (!imageData) {
-        console.log(`菜品[${itemName}]没有图片数据`);
+        console.log(`Item [${itemName}] has no image data`);
         return null;
       }
       
       // 现在图片数据可能是URL或Base64，两种情况都保留
       if (imageData.startsWith('data:image') || imageData.startsWith('/images/')) {
-        console.log(`菜品[${itemName}]图片数据有效`);
+        console.log(`Item [${itemName}] has valid image data`);
         return imageData;
       } else {
-        console.error(`菜品[${itemName}]的图片数据格式错误`);
+        console.error(`Item [${itemName}] has invalid image data format`);
         return null;
       }
     },
@@ -365,26 +365,23 @@ export default {
     },
     
     async saveMenuItem() {
-      console.log('saveMenuItem被调用，开始保存菜品数据');
+      console.log('saveMenuItem called, starting to save menu item data');
       // 先清除之前的消息
       this.clearAllMessages();
       
       if (!this.selectedRestaurantId) {
-        console.error('未选择餐厅，无法保存');
-        this.$message.error('请先选择餐厅');
+        console.error('Please select a restaurant first');
+        this.$message.error('Please select a restaurant first');
         return;
       }
 
       if (!this.menuItemForm.name || !this.menuItemForm.price) {
-        console.error('菜品信息不完整，无法保存');
-        this.$message.error('请填写完整的菜品信息');
+        console.error('Menu item information is incomplete, cannot save');
+        this.$message.error('Please fill in complete menu item information');
         return;
       }
 
-      console.log('图片数据状态检查 - imageUrl是否存在:', !!this.imageUrl, 
-                  '长度:', this.imageUrl ? this.imageUrl.length : 0,
-                  'menuItemForm.image是否存在:', !!this.menuItemForm.image,
-                  '长度:', this.menuItemForm.image ? this.menuItemForm.image.length : 0);
+      console.log('Data to be submitted:', JSON.stringify(this.menuItemForm));
 
       try {
         // 获取认证信息
@@ -399,7 +396,7 @@ export default {
           'userId': userId,
           'role': role
         };
-        console.log('准备发送请求，用户角色:', role, '用户ID:', userId);
+        console.log('Using two-step approach for large images: 1. Save menu item data');
 
         // 准备菜单项数据 - 不包含图片
         const formData = {
@@ -414,7 +411,7 @@ export default {
           // 确保包含likes值，如果是新建菜单项，则默认为0
           likes: this.menuItemForm.likes || 0
         };
-        console.log('准备提交的菜品数据:', JSON.stringify(formData));
+        console.log('First send menu item data');
 
         // 构建URL，将图片作为查询参数
         let url = 'http://localhost:8080/api/menu-items';
@@ -436,7 +433,7 @@ export default {
 
         // 根据是否为编辑模式决定使用PUT还是POST请求
         const method = this.editMode ? 'put' : 'post';
-        console.log('使用HTTP方法:', method, '请求URL:', url);
+        console.log('Using HTTP method:', method, 'Request URL:', url);
         
         // 如果图片数据太长，通过表单数据处理
         if (this.imageUrl && this.imageUrl.length > 2000) {
@@ -449,12 +446,12 @@ export default {
             headers: headers
           });
           
-          console.log('保存菜品响应:', response.data);
+          console.log('Save menu item response:', response.data);
           
           if (response.data && response.data.code === 200) {
             // 获取保存的菜品ID
             const savedItemId = response.data.data.id;
-            console.log('菜品保存成功，ID:', savedItemId, '准备更新图片');
+            console.log('Menu item saved successfully, ID:', savedItemId, 'preparing to update image');
             
             // 构建图片更新URL
             const imageUpdateUrl = `http://localhost:8080/api/menu-items/${savedItemId}/update-image`;
@@ -462,25 +459,25 @@ export default {
             
             try {
               // 发送更新图片的请求
-              console.log('发送图片更新请求，图片数据长度:', this.imageUrl.length);
+              console.log('Sending image update request, image data length:', this.imageUrl.length);
               const imageResponse = await axios.post(imageUpdateUrl, { image: this.imageUrl }, { headers });
-              console.log('图片更新响应:', imageResponse.data);
+              console.log('Image update response:', imageResponse.data);
               
-              this.$message.success(this.editMode ? '菜品更新成功' : '菜品添加成功');
+              this.$message.success(this.editMode ? 'Menu item updated successfully' : 'Menu item added successfully');
               this.loadMenu();
               this.resetForm();
             } catch (imageError) {
-              console.error('图片更新请求失败:', imageError);
-              console.error('错误详情:', imageError.response ? imageError.response.data : imageError.message);
-              this.$message.error('图片更新失败: ' + (imageError.response?.data?.msg || imageError.message));
+              console.error('Image update request failed:', imageError);
+              console.error('Error details:', imageError.response ? imageError.response.data : imageError.message);
+              this.$message.error('Image update failed: ' + (imageError.response?.data?.msg || imageError.message));
             }
           } else {
-            console.error('菜品保存失败:', response.data);
-            this.$message.error(response.data.msg || '操作失败');
+            console.error('Failed to save menu item:', response.data);
+            this.$message.error(response.data.msg || 'Operation failed');
           }
         } else {
           // 直接发送完整请求
-          console.log('使用单步方式处理小图片或无图片');
+          console.log('Using single-step approach for small images or no images');
           const response = await axios({
             method: method,
             url: url,
@@ -488,21 +485,21 @@ export default {
             headers: headers
           });
 
-          console.log('操作响应:', response.data);
+          console.log('Operation response:', response.data);
           
           if (response.data && response.data.code === 200) {
-            this.$message.success(this.editMode ? '菜品更新成功' : '菜品添加成功');
+            this.$message.success(this.editMode ? 'Menu item updated successfully' : 'Menu item added successfully');
             this.loadMenu();
             this.resetForm();
           } else {
-            console.error('操作失败:', response.data);
-            this.$message.error(response.data.msg || '操作失败');
+            console.error('Error saving menu item:', response.data);
+            this.$message.error(response.data.msg || 'Operation failed');
           }
         }
       } catch (error) {
-        console.error('保存菜品时出错:', error);
-        console.error('错误详情:', error.response ? error.response.data : error.message);
-        this.$message.error('操作失败: ' + (error.response?.data?.msg || error.message || '未知错误'));
+        console.error('Error saving menu item:', error);
+        console.error('Error details:', error.response ? error.response.data : error.message);
+        this.$message.error('Operation failed: ' + (error.response?.data?.msg || error.message || 'Unknown error'));
       }
     },
     
@@ -552,7 +549,7 @@ export default {
             'role': role
           };
           
-          console.log(`准备删除菜单项ID=${menuItem.id}`);
+          console.log(`Preparing to delete menu item ID=${menuItem.id}`);
           
           // 使用原始API路径
           const response = await axios.delete(
@@ -565,12 +562,12 @@ export default {
             this.loadMenu(); // 重新加载菜单
           } else {
             this.$message.error(response.data?.msg || 'Failed to delete menu item');
-            console.error("删除失败:", response.data);
+            console.error("Delete failed:", response.data);
           }
         }
       } catch (error) {
         console.error('Error deleting menu item:', error);
-        console.error("请求失败详情:", error.response ? error.response.data : error.message);
+        console.error("Request failed details:", error.response ? error.response.data : error.message);
         this.$message.error('Error deleting menu item: ' + (error.response?.data?.msg || error.message));
       }
     },
@@ -604,52 +601,52 @@ export default {
     },
     
     handleImageUpload(event) {
-      console.log('handleImageUpload被调用，接收到文件:', event.file.name);
+      console.log('handleImageUpload called, received file:', event.file.name);
       const file = event.file;
       try {
         // 对于图片上传，我们仍然使用FileReader显示预览
         const reader = new FileReader();
         reader.onload = (e) => {
-          console.log('FileReader成功读取文件，Base64数据长度:', e.target.result.length);
+          console.log('FileReader successfully read file, Base64 data length:', e.target.result.length);
           this.imageUrl = e.target.result; // 用于前端显示预览
           this.menuItemForm.image = e.target.result; // 用于保存到服务器
-          console.log('图片已转换为Base64格式预览，已设置imageUrl和menuItemForm.image');
+          console.log('Image converted to Base64 format preview, imageUrl and menuItemForm.image set');
         };
         reader.onerror = (e) => {
-          console.error('FileReader读取文件失败:', e);
-          this.$message.error('图片文件读取失败');
+          console.error('FileReader read file failed:', e);
+          this.$message.error('Image file read failed');
         };
-        console.log('开始调用readAsDataURL');
+        console.log('Starting to call readAsDataURL');
         reader.readAsDataURL(file);
       } catch (error) {
-        console.error('handleImageUpload处理出错:', error);
+        console.error('handleImageUpload processing error:', error);
       }
     },
     
     beforeImageUpload(file) {
-      console.log('beforeImageUpload被调用，检查文件:', file.name, '类型:', file.type, '大小:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+      console.log('beforeImageUpload called, checking file:', file.name, 'type:', file.type, 'size:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
       const isJPG = file.type === 'image/jpeg';
       const isPNG = file.type === 'image/png';
       const isLt2M = file.size / 1024 / 1024 < 1;
 
       if (!isJPG && !isPNG) {
-        console.error('文件格式验证失败: 不是JPG或PNG格式', file.type);
-        this.$message.error('上传图片只能是 JPG 或 PNG 格式!');
+        console.error('File format validation failed: not JPG or PNG format', file.type);
+        this.$message.error('Uploaded image must be JPG or PNG format!');
         return false;
       }
       if (!isLt2M) {
-        console.error('文件大小验证失败: 文件过大', (file.size / 1024 / 1024).toFixed(2) + 'MB');
-        this.$message.error('上传图片大小不能超过 1MB!');
+        console.error('File size validation failed: file too large', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+        this.$message.error('Uploaded image size must be less than 1MB!');
         return false;
       }
-      console.log('文件验证通过，准备上传');
+      console.log('File validation passed, preparing to upload');
       return (isJPG || isPNG) && isLt2M;
     },
     
     handleImageDisplayError(event, menuItem) {
       // 设置一个1x1像素的透明图片作为默认图片
       event.target.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
-      console.log(`已使用默认图片替换菜品[${menuItem.name}]的图片`);
+      console.log(`Default image used for menu item [${menuItem.name}]`);
     },
   }
 };
@@ -787,7 +784,7 @@ h2, h3 {
 }
 
 .image-error::after {
-  content: '图片加载失败';
+  content: 'Image load failed';
   position: absolute;
   bottom: 0;
   left: 0;
