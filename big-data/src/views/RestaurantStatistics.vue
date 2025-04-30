@@ -167,7 +167,13 @@
               <el-button size="small" type="primary" @click="loadComments">Refresh Comments</el-button>
             </div>
             
-            <div v-if="comments.length === 0" class="no-comments">
+            <div v-if="!isLoggedIn" class="no-comments login-required">
+              <i class="el-icon-lock"></i>
+              <p>Please log in to view and post comments</p>
+              <el-button type="primary" size="small" @click="goToLogin">Log In</el-button>
+            </div>
+            
+            <div v-else-if="comments.length === 0" class="no-comments">
               No comments for this restaurant.
             </div>
             
@@ -191,6 +197,26 @@
           </el-card>
         </el-col>
       </el-row>
+    </div>
+
+    <div class="rate-this-restaurant">
+      <h3>Rate this Restaurant:</h3>
+      <div v-if="isLoggedIn">
+        <el-rate
+          v-model="userRating"
+          show-score
+          @change="submitRating"
+          text-color="#ff9900"
+        ></el-rate>
+      </div>
+      <div v-else class="login-required-message">
+        <el-alert
+          title="Please log in to rate this restaurant"
+          type="info"
+          :closable="false"
+          show-icon>
+        </el-alert>
+      </div>
     </div>
   </div>
 </template>
@@ -250,7 +276,9 @@ export default {
       viewsChartRef: null,
       commentsTimelineChartRef: null,
       popularDishesChartRef: null,
-      charts: {}  // 添加charts对象存储所有图表实例
+      charts: {},  // 添加charts对象存储所有图表实例
+      isLoggedIn: false,
+      userRating: 0
     };
   },
   computed: {
@@ -538,29 +566,18 @@ export default {
     }
   },
   created() {
-    console.log('Statistics component created');
-    // Initialize date range default to past 30 days
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 30);
-    this.dateRange = [startDate, endDate];
+    // Check login status
+    this.checkLoginStatus();
     
-    // Get user ID and role directly from localStorage
-    this.userId = localStorage.getItem('userId');
-    this.userRole = localStorage.getItem('userRole');
+    // Load restaurant list
+    this.loadRestaurants();
     
-    console.log('Initial user info:', this.userId, this.userRole);
+    // Get user role and ID from localStorage
+    this.userRole = localStorage.getItem('userRole') || '';
+    this.userId = localStorage.getItem('userId') || null;
     
-    // 如果没有登录信息，使用模拟数据
-    if (!this.userId && !this.userRole) {
-      console.log('未检测到用户登录信息，将使用模拟数据');
-      setTimeout(() => {
-        this.loadMockData();
-      }, 500);
-    } else {
-      // Automatically load restaurant list
-      this.loadRestaurants();
-    }
+    // Listen for window resize events
+    window.addEventListener('resize', this.handleResize);
   },
   mounted() {
     console.log('RestaurantStatistics component mounted');
@@ -572,8 +589,8 @@ export default {
       } else if (!this.restaurants.length && !this.selectedRestaurant) {
         // 如果没有加载到餐厅列表且没有选择餐厅，则使用模拟数据
         console.log('未找到餐厅数据，显示模拟数据');
-        this.loadMockData();
-      }
+      this.loadMockData();
+    }
     }, 1000);
     
     // 添加window resize事件监听
@@ -625,6 +642,17 @@ export default {
     }
   },
   methods: {
+    // Check if user is logged in
+    checkLoginStatus() {
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      this.isLoggedIn = !!(token && userId);
+    },
+    
+    // Navigate to login page
+    goToLogin() {
+      this.$router.push('/login');
+    },
     // Return to Home
     backToHome() {
       console.log('Returning to home page');
@@ -637,11 +665,11 @@ export default {
         // Get authentication info
         const token = localStorage.getItem('token');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        
-        // Add user ID and role to request headers
-        headers['X-User-Id'] = this.userId || '';
-        headers['X-User-Role'] = this.userRole || '';
-        
+      
+      // Add user ID and role to request headers
+      headers['X-User-Id'] = this.userId || '';
+      headers['X-User-Role'] = this.userRole || '';
+      
         // Request restaurant list data
         const response = await request({
           url: '/api/canteen/list',
@@ -680,19 +708,19 @@ export default {
     },
     async loadPopularDishes() {
       console.log("正在加载热门菜品数据...");
-      
-      // 检查是否已选择餐厅
-      if (!this.selectedRestaurant) {
-        console.log("未选择餐厅，跳过API调用");
-        // 使用空数据
-        this.statistics.popularDishes = [];
-        // 更新图表
-        this.$nextTick(() => {
-          this.renderPopularDishesChart();
-        });
-        return; // 直接返回，不进行API调用
-      }
-      
+        
+        // 检查是否已选择餐厅
+        if (!this.selectedRestaurant) {
+          console.log("未选择餐厅，跳过API调用");
+          // 使用空数据
+          this.statistics.popularDishes = [];
+          // 更新图表
+          this.$nextTick(() => {
+            this.renderPopularDishesChart();
+          });
+          return; // 直接返回，不进行API调用
+        }
+        
       // 获取认证信息
       const token = localStorage.getItem('token');
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -701,7 +729,7 @@ export default {
       headers['X-User-Id'] = this.userId || '';
       headers['X-User-Role'] = this.userRole || '';
       
-      try {
+        try {
         console.log(`获取餐厅ID=${this.selectedRestaurant}的热门菜品`);
         
         // 使用正确的API端点获取菜品数据
@@ -783,7 +811,7 @@ export default {
           }
           
           console.log(`成功加载${this.statistics.popularDishes.length}个热门菜品:`, 
-                    JSON.stringify(this.statistics.popularDishes));
+                      JSON.stringify(this.statistics.popularDishes));
           
           // 同步menuItemCount保持一致性
           if (this.statistics.popularDishes && this.statistics.popularDishes.length > 0) {
@@ -793,7 +821,7 @@ export default {
               this.statistics.menuItemCount = this.statistics.popularDishes.length;
             }
           }
-                    
+                      
           // 如果仍然没有数据，创建模拟数据用于演示
           if (this.statistics.popularDishes.length === 0) {
             console.log("没有真实菜品数据，创建模拟数据");
@@ -870,7 +898,7 @@ export default {
         
         // 评论时间线图表初始化
         if (Array.isArray(this.statistics.commentsTimeline)) {
-          this.renderCommentsTimelineChart();
+        this.renderCommentsTimelineChart();
         } else {
           console.warn('评论时间线数据不是数组，跳过渲染');
           this.statistics.commentsTimeline = [];
@@ -878,7 +906,7 @@ export default {
         
         // 初始化视图趋势图表
         if (Array.isArray(this.statistics.viewsTrend)) {
-          this.initViewsChart();
+        this.initViewsChart();
         } else {
           console.warn('视图趋势数据不是数组，跳过渲染');
           this.statistics.viewsTrend = [];
@@ -886,7 +914,7 @@ export default {
 
         // 初始化热门菜品图表
         if (Array.isArray(this.statistics.popularDishes)) {
-          this.renderPopularDishesChart();
+        this.renderPopularDishesChart();
         } else {
           console.warn('热门菜品数据不是数组，跳过渲染');
           this.statistics.popularDishes = [];
@@ -1876,6 +1904,45 @@ export default {
         5: '#52c41a'   // 深绿
       };
       return colors[starLevel] || '#cccccc';
+    },
+    // Submit rating for restaurant
+    async submitRating() {
+      if (!this.isLoggedIn) {
+        this.$message.warning('Please log in to rate this restaurant');
+        return;
+      }
+      
+      if (!this.selectedRestaurant) {
+        this.$message.warning('Please select a restaurant first');
+        return;
+      }
+      
+      try {
+        const response = await request({
+          url: `/api/restaurant/rate`,
+          method: 'post',
+          data: {
+            restaurantId: this.selectedRestaurant,
+            rating: this.userRating,
+            userId: this.userId
+          }
+        });
+        
+        if (response && response.code === 200) {
+          this.$message.success('Rating submitted successfully');
+          
+          // Refresh statistics to show updated rating
+          this.getStatistics();
+          
+          // Reset user rating input
+          this.userRating = 0;
+        } else {
+          this.$message.error(response?.msg || 'Failed to submit rating');
+        }
+      } catch (error) {
+        console.error('Error submitting rating:', error);
+        this.$message.error('Error submitting rating: ' + (error.message || 'Unknown error'));
+      }
     }
   },
   watch: {
@@ -2079,6 +2146,15 @@ export default {
   border-radius: 4px;
 }
 
+.login-required {
+  text-align: center;
+  padding: 40px 0;
+  color: #909399;
+  font-style: italic;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
 .comments-list {
   max-height: 400px;
   overflow-y: auto;
@@ -2119,5 +2195,23 @@ export default {
     width: 100%;
     justify-content: space-between;
   }
+}
+
+.login-required-message {
+  text-align: center;
+  margin: 10px 0;
+}
+
+.rate-this-restaurant {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.rate-this-restaurant h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
 }
 </style> 

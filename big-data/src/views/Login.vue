@@ -1,18 +1,37 @@
 <template>
   <div class="login-container">
-    <h2>Login</h2>
     <form @submit.prevent="login">
       <div class="form-group">
         <label for="email">Email:</label>
-        <input id="email" v-model="user.email" type="email" required>
+        <el-input 
+          id="email" 
+          v-model="user.email" 
+          type="email" 
+          placeholder="Enter your email"
+          prefix-icon="el-icon-message"
+          required
+        ></el-input>
       </div>
       <div class="form-group">
         <label for="password">Password:</label>
-        <input id="password" v-model="user.password" type="password" required>
+        <el-input 
+          id="password" 
+          v-model="user.password" 
+          type="password" 
+          placeholder="Enter your password"
+          prefix-icon="el-icon-lock"
+          show-password
+          required
+        ></el-input>
       </div>
-      <button type="submit">Login</button>
+      <div class="action-buttons">
+        <el-button type="primary" native-type="submit" :loading="isLoading" round>Login</el-button>
+        <el-button @click="$emit('close')" round>Cancel</el-button>
+      </div>
+      <div class="register-link">
+        <p>Don't have an account? <router-link to="/register">Register</router-link></p>
+      </div>
     </form>
-    <button @click="$emit('close')">Close</button>
   </div>
 </template>
 
@@ -26,11 +45,19 @@ export default {
       user: {
         email: '',
         password: ''
-      }
+      },
+      isLoading: false
     };
   },
   methods: {
     async login() {
+      if (!this.user.email || !this.user.password) {
+        this.$message.warning("Please enter both email and password");
+        return;
+      }
+      
+      this.isLoading = true;
+      
       try {
         // 简单的登录数据
         const loginData = {
@@ -102,6 +129,8 @@ export default {
       } catch (error) {
         console.error("Login failed:", error);
         this.$message.error("Login failed: " + (error.message || "Please check your email and password"));
+      } finally {
+        this.isLoading = false;
       }
     }
   }
@@ -111,43 +140,39 @@ export default {
 
 <style scoped>
 .login-container {
-  width: 300px;
-  padding: 20px;
+  width: 100%;
   background: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
 }
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 label {
   display: block;
-  margin-bottom: 10px;
-  font-size: 16px;
-  color: #333;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
 }
-input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 25px;
 }
-button {
-  width: 100%;
-  padding: 10px;
-  background-color: #007bff;
-  border: none;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
+.action-buttons .el-button {
+  width: 48%;
 }
-button:hover {
-  background-color: #0056b3;
+.register-link {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 14px;
+  color: #606266;
+}
+.register-link a {
+  color: #409EFF;
+  text-decoration: none;
+}
+.register-link a:hover {
+  text-decoration: underline;
 }
 </style>
 

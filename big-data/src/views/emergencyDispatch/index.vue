@@ -42,9 +42,35 @@
             <button class="register_button" @click="showRegisterModal = true">Register</button>
             <button class="register_button" @click="showLoginModal = true">Login</button>
             <button v-if="isLoggedIn" class="register_button" @click="logout">Logout</button>
+            
             <!-- Register Modal -->
-            <register v-if="showRegisterModal" @close="showRegisterModal = false" />
-            <login v-if="showLoginModal" @close="showLoginModal = false" @updateUser="updateUserInfo" />
+            <el-dialog
+              title="Register"
+              :visible.sync="showRegisterModal"
+              width="400px"
+              center
+              custom-class="auth-modal register-modal"
+              :append-to-body="true"
+              :close-on-click-modal="false"
+              :show-close="true"
+            >
+              <register @close="showRegisterModal = false" />
+            </el-dialog>
+            
+            <!-- Login Modal -->
+            <el-dialog
+              title="Login"
+              :visible.sync="showLoginModal"
+              width="400px"
+              center
+              custom-class="auth-modal login-modal"
+              :append-to-body="true"
+              :close-on-click-modal="false"
+              :show-close="true"
+            >
+              <Login @close="showLoginModal = false" @login-success="handleLoginSuccess" />
+            </el-dialog>
+            
             <div class="dateField">{{ timeString }}</div>
             <div class="weekField">
               <div>{{ dateField }}</div>
@@ -279,16 +305,12 @@ export default {
       this.weekField = weekField
     },
     handleLoginSuccess(userData) {
-      console.log("登录成功，收到数据：", userData);
-      this.userRole = userData.role;
-      this.userEmail = userData.email;
-      this.isLoggedIn = true;
-
-      // 存入 localStorage
-      localStorage.setItem("userRole", userData.role);
-      localStorage.setItem("userEmail", userData.email);
-
       this.showLoginModal = false;
+      this.updateUserInfo({
+        role: localStorage.getItem("userRole"),
+        email: localStorage.getItem("userEmail")
+      });
+      this.$message.success(`Welcome ${localStorage.getItem("userName")}!`);
     },
     logout() {
       this.isLoggedIn = false;
@@ -619,5 +641,38 @@ body{
     font-size: 14px;
     color: #666664;
   }
+}
+.register_button:hover {
+  background-color: #e0e0e0;
+  border-color: #aaa;
+}
+
+/* 认证模态框样式 */
+.auth-modal {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.auth-modal :deep(.el-dialog__header) {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  margin-right: 0;
+  text-align: center;
+  background-color: #f8f9fa;
+}
+
+.auth-modal :deep(.el-dialog__body) {
+  padding: 20px;
+}
+
+.auth-modal :deep(.el-dialog__title) {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.auth-modal :deep(.el-dialog__headerbtn) {
+  top: 15px;
+  right: 15px;
 }
 </style>

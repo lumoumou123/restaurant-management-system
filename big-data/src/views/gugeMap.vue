@@ -21,6 +21,14 @@
           text-color="#ff9900"
         />
       </div>
+      <div v-else class="login-required-message">
+        <el-alert
+          title="Please log in to rate this restaurant"
+          type="info"
+          :closable="false"
+          show-icon>
+        </el-alert>
+      </div>
     </div>
 
 <script>
@@ -130,9 +138,10 @@ export default {
   },
   computed: {
     canRate() {
-      // 这里可以添加用户是否可以评分的逻辑
-      // 例如：用户必须登录才能评分
-      return true; // 或者根据具体需求返回 true/false
+      // 检查用户是否已登录
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      return token && userId; // 只有当token和userId都存在时才能评分
     }
   }
 };
@@ -157,6 +166,12 @@ export default {
 }
 
 .rate-restaurant {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ebeef5;
+}
+
+.login-required-message {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid #ebeef5;

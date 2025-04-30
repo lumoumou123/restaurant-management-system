@@ -75,13 +75,26 @@
         </div>
         <div class="rating-system">
           <strong>Rate this Restaurant:</strong>
-          <el-rate
-            v-model="currentRating"
-            :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
-            @change="rateLocation"
-            show-text
-            :texts="['Poor', 'Fair', 'Average', 'Good', 'Excellent']"
-          />
+          <div v-if="checkLoginStatus()">
+            <el-rate
+              v-model="currentRating"
+              :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
+              @change="rateLocation"
+              show-text
+              :texts="['Poor', 'Fair', 'Average', 'Good', 'Excellent']"
+            />
+          </div>
+          <div v-else class="login-required-notice">
+            <el-alert
+              title="Please log in to rate this restaurant"
+              type="info"
+              :closable="false"
+              show-icon>
+            </el-alert>
+            <el-button size="small" type="primary" @click="showLoginDialog = true" class="login-button">
+              Login
+            </el-button>
+          </div>
         </div>
       </div>
       
@@ -174,6 +187,11 @@
       :visible.sync="showLoginDialog"
       width="400px"
       @close="showLoginDialog = false"
+      center
+      custom-class="login-modal"
+      :append-to-body="true"
+      :close-on-click-modal="false"
+      :show-close="true"
     >
       <Login @close="showLoginDialog = false" @login-success="handleLoginSuccess" />
     </el-dialog>
@@ -488,6 +506,14 @@ export default {
         return;
       }
       
+      // Check if user is logged in
+      if (!this.checkLoginStatus()) {
+        this.$message.warning("Please login to rate this restaurant");
+        this.showLoginDialog = true;
+        this.currentRating = 0; // Reset rating
+        return;
+      }
+      
       rate({id: this.selectedLocation.id, score: value})
         .then(res => {
           if (res.code === 200) {
@@ -701,15 +727,24 @@ export default {
         return;
       }
       
-      // 检查用户是否登录
-      const userId = localStorage.getItem('userId');
-      if (!userId) {
+      // 检查用户是否登录 - 改用checkLoginStatus方法保持一致性
+      if (!this.checkLoginStatus()) {
         this.$message.warning('Please login to like dishes');
+        // 直接打开登录对话框而不是使用confirm
+        this.showLoginDialog = true;
         return;
       }
       
       console.log('正在点赞菜品:', item.name, '(ID:', item.id, ')');
-      axios.post(`http://localhost:8080/menu/like/${item.id}`)
+      const token = localStorage.getItem('token');
+      const userId = this.currentUserId;
+      
+      axios.post(`http://localhost:8080/menu/like/${item.id}`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': userId
+        }
+      })
         .then(res => {
           if (res.data && res.data.code === 200) {
             // 更新菜品点赞数
@@ -1062,5 +1097,45 @@ export default {
   border: 1px solid #e4e7ed;
   margin-right: 8px;
   font-size: 13px;
+}
+
+.login-required-notice {
+  background-color: #f8f8f8;
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.login-button {
+  margin-top: 10px;
+}
+
+/* 样式修改 - 添加登录框样式 */
+.login-modal {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.login-modal :deep(.el-dialog__header) {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  margin-right: 0;
+  text-align: center;
+  background-color: #f8f9fa;
+}
+
+.login-modal :deep(.el-dialog__body) {
+  padding: 20px;
+}
+
+.login-modal :deep(.el-dialog__title) {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.login-modal :deep(.el-dialog__headerbtn) {
+  top: 15px;
+  right: 15px;
 }
 </style>
