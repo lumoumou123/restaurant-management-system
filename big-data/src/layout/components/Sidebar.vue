@@ -14,22 +14,22 @@
         <span slot="title">首页</span>
       </el-menu-item>
       
-      <!-- 餐厅管理 (只有管理员和业主可见) -->
+      <!-- Restaurant Management (only visible to admins and owners) -->
       <el-menu-item 
         v-if="['Manager', 'Owner'].includes(userRole)" 
         index="/restaurant-management"
       >
         <i class="el-icon-s-shop"></i>
-        <span slot="title">餐厅管理</span>
+        <span slot="title">Restaurant Management</span>
       </el-menu-item>
       
-      <!-- 餐厅统计 (只有管理员和业主可见) -->
+      <!-- Restaurant Statistics (only visible to admins and owners) -->
       <el-menu-item 
         v-if="['Manager', 'Owner'].includes(userRole)" 
         index="/restaurant-statistics"
       >
         <i class="el-icon-data-analysis"></i>
-        <span slot="title">餐厅统计</span>
+        <span slot="title">Restaurant Statistics</span>
       </el-menu-item>
       
       <!-- 其他菜单项 -->

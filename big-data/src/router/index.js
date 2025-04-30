@@ -25,7 +25,7 @@ const routes = [
     name: 'RestaurantManagement',
     component: RestaurantManagement,
     meta: {
-      title: '餐厅管理',
+      title: 'Restaurant Management',
       icon: 'el-icon-s-shop',
       requiresAuth: true,
       roles: ['Manager', 'Owner']
@@ -44,7 +44,7 @@ const routes = [
     name: 'RestaurantStatistics',
     component: RestaurantStatistics,
     meta: {
-      title: '餐厅统计仪表盘',
+      title: 'Restaurant Statistics Dashboard',
       icon: 'el-icon-data-analysis',
       requiresAuth: true,
       roles: ['Manager', 'Owner']
@@ -84,7 +84,7 @@ router.beforeEach((to, from, next) => {
     document.getElementsByTagName('head')[0].appendChild(link)
   }
   
-  // 权限验证 - 餐厅管理页面需要用户登录
+  // 权限验证 - Restaurant Management page requires user login
   if (to.path === '/restaurant-management' || to.path === '/restaurant-statistics') {
     const userRole = localStorage.getItem('userRole');
     if (!userRole || (userRole !== 'Manager' && userRole !== 'Owner')) {

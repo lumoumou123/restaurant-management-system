@@ -1,77 +1,77 @@
 <template>
   <div class="dashboard-container">
-    <div class="welcome-header">
-      <h1>欢迎使用餐厅管理系统</h1>
-      <p>{{ greeting }}</p>
+    <div class="welcome-section">
+      <h1>Welcome to Restaurant Management System</h1>
+      <p>Access your restaurant data, statistics, and management tools in one place.</p>
     </div>
-
-    <el-row :gutter="20">
-      <!-- 餐厅管理卡片 -->
-      <el-col :span="8" v-if="['Manager', 'Owner'].includes(userRole)">
-        <el-card shadow="hover" class="feature-card" @click.native="navigateTo('/restaurant-management')">
+    
+    <div class="dashboard-panels">
+      <!-- Restaurant Management card -->
+      <el-card class="dashboard-card" shadow="hover" @click.native="navigateTo('/restaurant-management')">
+        <div class="card-content">
           <div class="card-icon">
             <i class="el-icon-s-shop"></i>
           </div>
-          <div class="card-content">
-            <h3>餐厅管理</h3>
-            <p>管理餐厅信息、地址和菜单</p>
+          <div class="card-info">
+            <h3>Restaurant Management</h3>
+            <p>Add, edit, and manage your restaurants</p>
           </div>
-        </el-card>
-      </el-col>
-
-      <!-- 餐厅统计卡片 -->
-      <el-col :span="8" v-if="['Manager', 'Owner'].includes(userRole)">
-        <el-card shadow="hover" class="feature-card" @click.native="navigateTo('/restaurant-statistics')">
+        </div>
+      </el-card>
+      
+      <!-- Restaurant Statistics card -->
+      <el-card class="dashboard-card" shadow="hover" @click.native="navigateTo('/restaurant-statistics')">
+        <div class="card-content">
           <div class="card-icon">
             <i class="el-icon-data-analysis"></i>
           </div>
-          <div class="card-content">
-            <h3>餐厅统计</h3>
-            <p>查看评分、评论和访问量等统计数据</p>
+          <div class="card-info">
+            <h3>Restaurant Statistics</h3>
+            <p>View ratings, reviews, and statistics</p>
           </div>
-        </el-card>
-      </el-col>
-
-      <!-- 餐厅列表卡片 -->
-      <el-col :span="8">
-        <el-card shadow="hover" class="feature-card" @click.native="navigateTo('/')">
+        </div>
+      </el-card>
+      
+      <!-- Restaurant List card -->
+      <el-card class="dashboard-card" shadow="hover" @click.native="navigateTo('/')">
+        <div class="card-content">
           <div class="card-icon">
             <i class="el-icon-tickets"></i>
           </div>
-          <div class="card-content">
-            <h3>餐厅列表</h3>
-            <p>浏览所有餐厅和评论</p>
+          <div class="card-info">
+            <h3>Restaurant List</h3>
+            <p>Browse all restaurants and reviews</p>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </div>
+      </el-card>
+    </div>
 
     <!-- 业主专区 -->
     <div v-if="userRole === 'Owner'" class="owner-section">
-      <h2>我的餐厅概览</h2>
+      <h2>My Restaurant Overview</h2>
       <el-row :gutter="20">
         <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-value">{{ ownerStats.restaurantCount || 0 }}</div>
-            <div class="stat-label">餐厅数量</div>
+            <div class="stat-label">Restaurant Count</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-value">{{ ownerStats.averageRating || 0 }}</div>
-            <div class="stat-label">平均评分</div>
+            <div class="stat-label">Average Rating</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-value">{{ ownerStats.totalComments || 0 }}</div>
-            <div class="stat-label">总评论数</div>
+            <div class="stat-label">Total Comments</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-value">{{ ownerStats.viewCount || 0 }}</div>
-            <div class="stat-label">本月访问量</div>
+            <div class="stat-label">Monthly Views</div>
           </el-card>
         </el-col>
       </el-row>
@@ -79,38 +79,38 @@
 
     <!-- 管理员专区 -->
     <div v-if="userRole === 'Manager'" class="manager-section">
-      <h2>系统概览</h2>
+      <h2>System Overview</h2>
       <el-row :gutter="20">
         <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-value">{{ managerStats.totalRestaurants || 0 }}</div>
-            <div class="stat-label">总餐厅数</div>
+            <div class="stat-label">Total Restaurants</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-value">{{ managerStats.totalOwners || 0 }}</div>
-            <div class="stat-label">餐厅业主</div>
+            <div class="stat-label">Restaurant Owners</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-value">{{ managerStats.totalUsers || 0 }}</div>
-            <div class="stat-label">注册用户</div>
+            <div class="stat-label">Registered Users</div>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover" class="stat-card">
             <div class="stat-value">{{ managerStats.totalComments || 0 }}</div>
-            <div class="stat-label">本月评论</div>
+            <div class="stat-label">Monthly Comments</div>
           </el-card>
         </el-col>
       </el-row>
     </div>
 
-    <!-- 最近活动 -->
+    <!-- Recent Activity -->
     <div class="recent-activity">
-      <h2>最近活动</h2>
+      <h2>Recent Activity</h2>
       <el-timeline>
         <el-timeline-item
           v-for="(activity, index) in recentActivities"
@@ -148,22 +148,22 @@ export default {
       },
       recentActivities: [
         {
-          content: '系统更新：添加了餐厅统计功能',
+          content: 'System Update: Added restaurant statistics feature',
           time: '2023-06-01 12:00:00',
           color: '#0bbd87'
         },
         {
-          content: '新用户注册',
+          content: 'New user registered',
           time: '2023-05-30 15:26:38',
           color: '#409EFF'
         },
         {
-          content: '餐厅"北京烤鸭店"收到新的评论',
+          content: 'New comment on restaurant "Beijing Duck House"',
           time: '2023-05-29 09:15:20',
           color: '#E6A23C'
         },
         {
-          content: '餐厅"上海小笼包"更新了菜单',
+          content: 'Restaurant "Shanghai Dumpling" updated menu',
           time: '2023-05-28 14:33:41',
           color: '#F56C6C'
         }
@@ -176,22 +176,22 @@ export default {
       let greeting = ''
       
       if (hour < 6) {
-        greeting = '凌晨好'
+        greeting = 'Good early morning'
       } else if (hour < 9) {
-        greeting = '早上好'
+        greeting = 'Good morning'
       } else if (hour < 12) {
-        greeting = '上午好'
+        greeting = 'Good morning'
       } else if (hour < 14) {
-        greeting = '中午好'
+        greeting = 'Good afternoon'
       } else if (hour < 17) {
-        greeting = '下午好'
+        greeting = 'Good afternoon'
       } else if (hour < 19) {
-        greeting = '傍晚好'
+        greeting = 'Good evening'
       } else {
-        greeting = '晚上好'
+        greeting = 'Good evening'
       }
       
-      return `${greeting}，${this.userName || '用户'}！今天是 ${this.formatDate(new Date())}`
+      return `${greeting}，${this.userName || 'User'}! Today is ${this.formatDate(new Date())}`
     }
   },
   mounted() {
@@ -218,7 +218,7 @@ export default {
       const year = date.getFullYear()
       const month = date.getMonth() + 1
       const day = date.getDate()
-      const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+      const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
       const weekday = weekdays[date.getDay()]
       
       return `${year}年${month}月${day}日 ${weekday}`
@@ -232,17 +232,26 @@ export default {
   padding: 20px;
 }
 
-.welcome-header {
+.welcome-section {
   margin-bottom: 30px;
   text-align: center;
 }
 
-.welcome-header h1 {
+.welcome-section h1 {
   font-size: 28px;
   margin-bottom: 10px;
 }
 
-.feature-card {
+.welcome-section p {
+  color: #606266;
+}
+
+.dashboard-panels {
+  display: flex;
+  justify-content: space-between;
+}
+
+.dashboard-card {
   height: 200px;
   margin-bottom: 20px;
   cursor: pointer;
@@ -253,7 +262,7 @@ export default {
   align-items: center;
 }
 
-.feature-card:hover {
+.dashboard-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
@@ -264,15 +273,15 @@ export default {
   color: #409EFF;
 }
 
-.card-content {
+.card-info {
   text-align: center;
 }
 
-.card-content h3 {
+.card-info h3 {
   margin-bottom: 10px;
 }
 
-.card-content p {
+.card-info p {
   color: #606266;
 }
 
@@ -313,7 +322,7 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .feature-card {
+  .dashboard-card {
     height: 150px;
   }
   
