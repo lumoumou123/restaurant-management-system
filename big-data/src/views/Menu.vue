@@ -224,26 +224,21 @@ export default {
       try {
         // 获取认证信息
         const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        const userRole = localStorage.getItem('userRole');
+        
+        // 设置认证头信息
         const headers = {
           'Content-Type': 'application/json',
-          'token': token,
-          'userId': this.userId,
-          'role': this.userRole
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': userId,
+          'X-User-Role': userRole
         };
         
-        console.log("Loading restaurant list: Current user role:", this.userRole, "User ID:", this.userId);
+        console.log("Loading restaurant list: Current user role:", userRole, "User ID:", userId);
         
-        let response;
-        if (this.userRole === 'Manager') {
-          // 管理员可以看到所有餐厅
-          response = await axios.get('http://localhost:8080/api/canteen/list', { headers });
-        } else if (this.userRole === 'Owner') {
-          // 业主只能看到自己的餐厅
-          response = await axios.get(`http://localhost:8080/api/canteen/owner/canteens`, { headers });
-        } else {
-          // 其他角色，使用通用端点
-          response = await axios.get('http://localhost:8080/api/canteen/list', { headers });
-        }
+        // 统一使用list接口
+        const response = await axios.get('http://localhost:8080/api/canteen/list', { headers });
         
         if (response && response.data && response.data.code === 200) {
           this.restaurants = response.data.data || [];
@@ -273,67 +268,40 @@ export default {
     },
     
     async loadMenu() {
-      if (!this.selectedRestaurantId) return;
-      
-      // 先清除之前的消息
-      this.clearAllMessages();
-      
       try {
-        this.menuItemForm.restaurantId = this.selectedRestaurantId;
+        if (!this.selectedRestaurantId) return;
         
-        // 获取认证信息
+        // 获取认证信息并设置请求头
         const token = localStorage.getItem('token');
-        const userId = localStorage.getItem('userId');
-        const role = localStorage.getItem('userRole');
-        
-        // 设置请求头
         const headers = {
           'Content-Type': 'application/json',
-          'token': token,
-          'userId': userId,
-          'role': role
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': this.userId,
+          'X-User-Role': this.userRole
         };
         
-        console.log(`Loading menu for restaurant ID=${this.selectedRestaurantId}`);
+        console.log('Loading menu for restaurant:', this.selectedRestaurantId);
+        console.log('Request headers:', headers);
+
+        // 使用不同的API端点处理不同角色
+        let url = `http://localhost:8080/api/menu-items/restaurant/${this.selectedRestaurantId}`;
         
-        // 尝试不同的API路径，绕过view_count和order_count字段的查询
-        // 使用SQL查询特定字段，而不是使用通用的查询
-        const response = await axios.get(
-          `http://localhost:8080/menu/list/${this.selectedRestaurantId}`, 
-          { headers }
-        );
+        const response = await axios.get(url, { headers });
         
-        if (response.data && response.data.code === 200) {
-          // 确保menuItems字段与前端组件匹配
+        if (response.data.code === 200) {
           this.menuItems = response.data.data || [];
-          
-          // 添加额外处理：确保数据字段与前端组件匹配
-          this.menuItems = this.menuItems.map(item => ({
-            ...item,
-            id: item.id,
-            price: parseFloat(item.price) || 0, // 确保价格是数字类型
-            isAvailable: Boolean(item.isAvailable), // 确保是布尔值
-            restaurantId: item.canteenId, // 保持内部一致性
-            image: this.validateImageData(item.image, item.name) // 验证图片数据
-          }));
-          
-          console.log(`Successfully loaded ${this.menuItems.length} menu items`, this.menuItems[0]);
-          this.filterByCategory();
-          
-          // 成功加载菜单项，使用success类型的消息提示
-          if (this.menuItems.length > 0) {
-            this.$message.success(`Successfully loaded ${this.menuItems.length} menu items`);
-          } else {
-            this.$message.info('No menu items found, you can add new items');
+          this.filteredMenuItems = this.menuItems;
+          console.log('Successfully loaded menu items:', this.menuItems.length);
+          if (this.menuItems.length === 0) {
+            this.$message.info('No menu items found for this restaurant yet. Add your first item!');
           }
         } else {
-          this.$message.error(response.data?.msg || 'Failed to load menu items');
-          console.error("Failed to load menu:", response.data);
+          console.error('Failed to load menu:', response.data.msg);
+          this.$message.error(response.data.msg || 'Failed to load menu items');
         }
       } catch (error) {
         console.error('Error loading menu:', error);
-        console.error("请求失败详情:", error.response ? error.response.data : error.message);
-        this.$message.error('Error loading menu items: ' + (error.response?.data?.msg || error.message));
+        this.$message.error(error.response?.data?.msg || 'Failed to load menu items');
       }
     },
     

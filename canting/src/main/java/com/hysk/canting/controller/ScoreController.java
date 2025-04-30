@@ -31,41 +31,41 @@ public class ScoreController {
     @Autowired
     private CanteenMapper canteenMapper;
 
-    /**
-     * 计算餐厅的平均评分
-     * @param canteenId 餐厅ID
-     * @return 包含平均分和评分总数的结果
-     */
-    private Map<String, Object> calculateCanteenRating(Long canteenId) {
-        // 计算平均评分
-        LambdaQueryWrapper<ScoreList> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ScoreList::getCanteenId, canteenId);
-        List<ScoreList> scores = scoreListMapper.selectList(queryWrapper);
-        
-        double totalScore = 0;
-        for (ScoreList score : scores) {
-            if (score.getScore() != null && !score.getScore().isEmpty()) {
-                try {
-                    totalScore += Double.parseDouble(score.getScore());
-                } catch (NumberFormatException e) {
-                    logger.warn("非法的评分值: {}", score.getScore());
-                    // 忽略无法解析的评分
-                }
+/**
+ * Calculate the average rating for a restaurant
+ * @param canteenId Restaurant ID
+ * @return Result containing average rating and total number of ratings
+ */
+private Map<String, Object> calculateCanteenRating(Long canteenId) {
+    // Calculate average rating
+    LambdaQueryWrapper<ScoreList> queryWrapper = new LambdaQueryWrapper<>();
+    queryWrapper.eq(ScoreList::getCanteenId, canteenId);
+    List<ScoreList> scores = scoreListMapper.selectList(queryWrapper);
+    
+    double totalScore = 0;
+    for (ScoreList score : scores) {
+        if (score.getScore() != null && !score.getScore().isEmpty()) {
+            try {
+                totalScore += Double.parseDouble(score.getScore());
+            } catch (NumberFormatException e) {
+                logger.warn("Invalid rating value: {}", score.getScore());
+                // Ignore unparseable ratings
             }
         }
-        
-        double avgScore = !scores.isEmpty() ? totalScore / scores.size() : 0;
-        // 格式化为保留一位小数
-        avgScore = Double.parseDouble(String.format("%.1f", avgScore));
-        
-        // 返回结果
-        Map<String, Object> result = new HashMap<>();
-        result.put("rating", avgScore);
-        result.put("averageRating", avgScore); // 兼容两种命名
-        result.put("totalRatings", scores.size());
-        
-        return result;
     }
+    
+    double avgScore = !scores.isEmpty() ? totalScore / scores.size() : 0;
+    // Format to one decimal place
+    avgScore = Double.parseDouble(String.format("%.1f", avgScore));
+    
+    // Return results
+    Map<String, Object> result = new HashMap<>();
+    result.put("rating", avgScore);
+    result.put("averageRating", avgScore); // Compatible with both naming
+    result.put("totalRatings", scores.size());
+    
+    return result;
+}
     
     /**
      * 更新餐厅评分

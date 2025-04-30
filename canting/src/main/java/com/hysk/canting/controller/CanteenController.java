@@ -82,15 +82,34 @@ public class CanteenController {
     }
 
     @GetMapping("/list")
-    public R<List<Canteen>> list() {
+    public R<List<Canteen>> list(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader) {
         try {
+            logger.info("获取餐厅列表, X-User-Id={}, X-User-Role={}", userIdHeader, roleHeader);
+            
             LambdaQueryWrapper<Canteen> queryWrapper = new LambdaQueryWrapper<>();
+            
+            // 如果是Owner角色，只返回自己拥有的餐厅
+            if ("Owner".equalsIgnoreCase(roleHeader) && userIdHeader != null && !userIdHeader.isEmpty()) {
+                try {
+                    Long userId = Long.parseLong(userIdHeader);
+                    logger.info("Owner角色，只返回ownerId={}的餐厅", userId);
+                    queryWrapper.eq(Canteen::getOwnerId, userId);
+                } catch (NumberFormatException e) {
+                    logger.warn("X-User-Id格式错误: {}", userIdHeader);
+                }
+            }
+            
+            // 查询餐厅列表
             List<Canteen> canteens = canteenMapper.selectList(queryWrapper);
+            logger.info("查询到{}家餐厅", canteens.size());
 
-            // Calculate and set average rating for each canteen
+            // 计算并设置每个餐厅的平均评分
             canteens.forEach(canteen -> {
                 double avgScore = calculateAverageRating(canteen.getId());
                 canteen.setScore(String.valueOf(avgScore));
+                logger.debug("餐厅ID={}, 名称={}, 评分={}", canteen.getId(), canteen.getName(), avgScore);
             });
 
             return R.ok(canteens);

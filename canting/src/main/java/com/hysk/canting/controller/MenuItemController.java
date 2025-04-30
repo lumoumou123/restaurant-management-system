@@ -41,18 +41,34 @@ public class MenuItemController {
      * 获取餐厅的所有菜单项
      */
     @GetMapping({"/restaurant/{restaurantId}", "/list/{restaurantId}"})
-    public R<List<MenuItem>> getMenuByRestaurant(@PathVariable Long restaurantId) {
+    public R<List<MenuItem>> getMenuByRestaurant(
+            @PathVariable Long restaurantId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role) {
         try {
+            log.info("获取餐厅菜单, restaurantId={}, userId={}, role={}", restaurantId, userId, role);
+            
             if (restaurantId == null) {
+                log.warn("餐厅ID为空");
                 return R.fail("Restaurant ID is required");
             }
 
+            // 获取餐厅信息
+            Canteen canteen = canteenMapper.selectById(restaurantId);
+            if (canteen == null) {
+                log.warn("餐厅不存在, id={}", restaurantId);
+                return R.fail("餐厅不存在");
+            }
+            
+            // 直接获取菜单项，不进行权限验证
+            // 简化处理：不管是Owner还是Manager，都允许访问菜单
             List<MenuItem> menuItems = menuItemService.getMenuItemsByCanteenId(restaurantId);
+            log.info("成功获取菜单项数量: {}", menuItems.size());
 
             return R.ok(menuItems);
         } catch (Exception e) {
-            log.error("Error getting menu items: {}", e.getMessage());
-            return R.fail("Failed to get menu items: " + e.getMessage());
+            log.error("获取菜单项时发生错误: {}", e.getMessage(), e);
+            return R.fail("获取菜单失败: " + e.getMessage());
         }
     }
 
@@ -321,7 +337,7 @@ public class MenuItemController {
      * 获取餐厅流行菜品（按点赞数排序）
      */
     @GetMapping("/popular/{canteenId}")
-    public R<List<MenuItem>> getPopularItems(@PathVariable Long canteenId) {
+    public R<List<MenuItem>> getPopularItems(@PathVariable(required = false) Long canteenId) {
         try {
             if (canteenId == null) {
                 log.error("获取流行菜品失败：canteenId为空");

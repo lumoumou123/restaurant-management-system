@@ -99,6 +99,11 @@ public class UserServiceImpl implements UserService {
             logger.info("从请求头获取的token: {}", token != null ? token.substring(0, Math.min(token.length(), 10)) + "..." : "null");
             
             if (token != null && !token.isEmpty()) {
+                // 处理Bearer token格式
+                if (token.startsWith("Bearer ")) {
+                    token = token.substring(7); // 移除"Bearer "前缀
+                }
+                
                 // 实际项目中应该解析JWT token并验证
                 // 这里简化处理，根据token内容判断角色和权限
                 
