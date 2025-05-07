@@ -76,6 +76,3 @@ npm run serve
 - **Owner**: Can manage their own restaurants and menus
 - **Customer**: Can view restaurants, leave comments, and ratings
 
-## License
-
-[MIT License](LICENSE) 
