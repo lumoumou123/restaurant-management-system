@@ -76,13 +76,13 @@
         <div class="rating-system">
           <strong>Rate this Restaurant:</strong>
           <div v-if="checkLoginStatus()">
-            <el-rate
-              v-model="currentRating"
-              :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
-              @change="rateLocation"
-              show-text
-              :texts="['Poor', 'Fair', 'Average', 'Good', 'Excellent']"
-            />
+          <el-rate
+            v-model="currentRating"
+            :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
+            @change="rateLocation"
+            show-text
+            :texts="['Poor', 'Fair', 'Average', 'Good', 'Excellent']"
+          />
           </div>
           <div v-else class="login-required-notice">
             <el-alert
@@ -352,6 +352,9 @@ export default {
       }
 
       try {
+        // 清除加载消息
+        this.mapError = null;
+
         // 创建自定义的地图类型控件
         const customMapTypeControlDiv = document.createElement('div');
         customMapTypeControlDiv.className = 'custom-map-type-control';

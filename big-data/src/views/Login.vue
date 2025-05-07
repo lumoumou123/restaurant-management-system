@@ -29,7 +29,7 @@
         <el-button @click="$emit('close')" round>Cancel</el-button>
       </div>
       <div class="register-link">
-        <p>Don't have an account? <router-link to="/register">Register</router-link></p>
+        <p>Don't have an account? <a href="#" @click.prevent="openRegister">Register</a></p>
       </div>
     </form>
   </div>
@@ -50,6 +50,10 @@ export default {
     };
   },
   methods: {
+    openRegister() {
+      this.$emit('close');  // Close login modal
+      this.$emit('open-register');  // Emit event to open register modal
+    },
     async login() {
       if (!this.user.email || !this.user.password) {
         this.$message.warning("Please enter both email and password");
@@ -79,6 +83,12 @@ export default {
         if (response.data && response.data.code === 200 && response.data.data) {
           // 标准 R<T> 响应格式
           const userData = response.data.data;
+          
+          // 验证返回的用户数据是否完整
+          if (!userData || !userData.id || !userData.username || !userData.role || !userData.email) {
+            throw new Error("Invalid user data received");
+          }
+          
           console.log("Login successful, user data (R format):", userData);
           
           // 保存用户信息
@@ -86,49 +96,31 @@ export default {
           localStorage.setItem("userName", userData.username);
           localStorage.setItem("userRole", userData.role);
           localStorage.setItem("userEmail", userData.email);
-        } else if (response.status === 200 && typeof response.data === 'object') {
-          // 直接返回用户对象的情况
-          const userData = response.data;
-          console.log("Login successful, user data (direct object):", userData);
           
-          // 保存用户信息
-          localStorage.setItem("userId", userData.id);
-          localStorage.setItem("userName", userData.username);
-          localStorage.setItem("userRole", userData.role);
-          localStorage.setItem("userEmail", userData.email);
+          // 成功提示和事件
+          this.$message.success("Login successful");
+          this.$emit("close");
+          this.$emit("login-success", {
+            userId: userData.id,
+            userName: userData.username
+          });
+          
+          // 发送通知 - 使用全局事件总线
+          this.$root.$emit('user-logged-in', {
+            userId: userData.id,
+            userName: userData.username
+          });
         } else {
-          throw new Error("Invalid response format");
+          throw new Error(response.data?.msg || "Invalid credentials");
         }
-
-        // 成功提示和事件
-        this.$message.success("Login successful");
-        this.$emit("close");
-        this.$emit("login-success", {
-          userId: localStorage.getItem("userId"),
-          userName: localStorage.getItem("userName")
-        });
-        
-        // 发送通知 - 使用全局事件总线
-        this.$root.$emit('user-logged-in', {
-          userId: localStorage.getItem("userId"),
-          userName: localStorage.getItem("userName")
-        });
-        
-        // 显示存储的信息用于调试
-        console.log("Stored information after login:", {
-          userId: localStorage.getItem("userId"),
-          userName: localStorage.getItem("userName"),
-          userRole: localStorage.getItem("userRole"),
-          userEmail: localStorage.getItem("userEmail")
-        });
-        
-        // 强制所有组件更新登录状态
-        setTimeout(() => {
-          window.dispatchEvent(new Event('storage'));
-        }, 100);
       } catch (error) {
         console.error("Login failed:", error);
-        this.$message.error("Login failed: " + (error.message || "Please check your email and password"));
+        this.$message.error(error.response?.data?.msg || "Invalid email or password");
+        // 清除可能存在的旧数据
+        localStorage.removeItem("userId");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
       } finally {
         this.isLoading = false;
       }

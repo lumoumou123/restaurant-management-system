@@ -31,7 +31,7 @@ public class StaticResourceController {
             
             return R.ok(result);
         } catch (Exception e) {
-            return R.fail("获取列表数据失败: " + e.getMessage());
+            return R.fail("Failed to get list data: " + e.getMessage());
         }
     }
     
@@ -41,6 +41,6 @@ public class StaticResourceController {
     @GetMapping("/api/health")
     @ResponseBody
     public R<String> healthCheck() {
-        return R.ok("服务正常运行");
+        return R.ok("Service is running normally");
     }
 } 

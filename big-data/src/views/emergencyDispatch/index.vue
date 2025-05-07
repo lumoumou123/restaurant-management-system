@@ -54,7 +54,10 @@
               :close-on-click-modal="false"
               :show-close="true"
             >
-              <register @close="showRegisterModal = false" />
+              <register 
+                @close="showRegisterModal = false"
+                @open-login="handleOpenLogin"
+              />
             </el-dialog>
             
             <!-- Login Modal -->
@@ -68,7 +71,11 @@
               :close-on-click-modal="false"
               :show-close="true"
             >
-              <Login @close="showLoginModal = false" @login-success="handleLoginSuccess" />
+              <Login 
+                @close="showLoginModal = false" 
+                @login-success="handleLoginSuccess"
+                @open-register="handleOpenRegister"
+              />
             </el-dialog>
             
             <div class="dateField">{{ timeString }}</div>
@@ -377,6 +384,14 @@ export default {
     handleRatingUpdated(data) {
       // Refresh the restaurant list to get updated ratings
       this.getData();
+    },
+    handleOpenRegister() {
+      this.showLoginModal = false;  // Close login modal
+      this.showRegisterModal = true;  // Open register modal
+    },
+    handleOpenLogin() {
+      this.showRegisterModal = false;  // Close register modal
+      this.showLoginModal = true;  // Open login modal
     },
   },
 }

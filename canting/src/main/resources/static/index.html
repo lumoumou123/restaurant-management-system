@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>餐厅管理系统 API</title>
+    <title>Restaurant Management System API</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -38,48 +38,47 @@
     </style>
 </head>
 <body>
-    <h1>餐厅管理系统 API</h1>
-    <p>这是餐厅管理系统的后端API服务。以下是可用的API端点：</p>
+    <h1>Restaurant Management System API</h1>
+    <p>This is the backend API service for the Restaurant Management System. Below are the available API endpoints:</p>
     
-    <h2>健康检查</h2>
+    <h2>Health Check</h2>
     <ul>
-        <li><code>GET /api/health</code> - 检查API服务状态</li>
+        <li><code>GET /api/health</code> - Check API service status</li>
     </ul>
     
-    <h2>数据资源</h2>
+    <h2>Data Resources</h2>
     <ul>
-        <li><code>GET /api/list</code> - 获取列表数据</li>
+        <li><code>GET /api/list</code> - Get list data</li>
     </ul>
     
-    <h2>餐厅管理</h2>
+    <h2>Restaurant Management</h2>
     <ul>
-        <li><code>GET /api/canteen/list</code> - 获取餐厅列表</li>
-        <li><code>POST /api/canteen</code> - 添加新餐厅</li>
-        <li><code>PUT /api/canteen</code> - 更新餐厅信息</li>
-        <li><code>GET /api/canteen/owner/canteens</code> - 获取当前用户的餐厅</li>
+        <li><code>GET /api/canteen/list</code> - Get restaurant list</li>
+        <li><code>POST /api/canteen</code> - Add new restaurant</li>
+        <li><code>PUT /api/canteen</code> - Update restaurant information</li>
+        <li><code>GET /api/canteen/owner/canteens</code> - Get current user's restaurants</li>
     </ul>
     
-    <h2>统计数据</h2>
+    <h2>Statistics</h2>
     <ul>
-        <li><code>GET /statistics/canting</code> - 获取餐厅统计数据</li>
-        <li><code>GET /statistics/summary</code> - 获取统计数据汇总</li>
-        <li><code>GET /statistics/owner</code> - 获取业主所有餐厅的统计数据</li>
+        <li><code>GET /statistics/canting</code> - Get restaurant statistics</li>
+        <li><code>GET /statistics/summary</code> - Get statistics summary</li>
+        <li><code>GET /statistics/owner</code> - Get statistics for all restaurants owned by the owner</li>
     </ul>
     
-    <h2>菜单管理</h2>
+    <h2>Menu Management</h2>
     <ul>
-        <li><code>GET /api/menu-items/canting/{canteenId}</code> - 获取餐厅的菜单</li>
-        <li><code>POST /api/menu-items</code> - 添加菜单项</li>
-        <li><code>PUT /api/menu-items</code> - 更新菜单项</li>
+        <li><code>GET /api/menu-items/canting/{canteenId}</code> - Get restaurant menu</li>
+        <li><code>POST /api/menu-items</code> - Add menu item</li>
+        <li><code>PUT /api/menu-items</code> - Update menu item</li>
     </ul>
     
-    <h2>评论管理</h2>
+    <h2>Comment Management</h2>
     <ul>
-        <li><code>GET /api/comments/canteen/{canteenId}</code> - 获取餐厅的评论</li>
-        <li><code>POST /api/comments</code> - 添加评论</li>
-        <li><code>DELETE /api/comments/{id}</code> - 删除评论</li>
+        <li><code>GET /api/comments/canteen/{canteenId}</code> - Get restaurant comments</li>
+        <li><code>POST /api/comments</code> - Add comment</li>
     </ul>
     
-    <p style="margin-top: 50px; color: #666; font-size: 14px;">© 2025 餐厅管理系统</p>
+    <p style="margin-top: 50px; color: #666; font-size: 14px;">© 2025 Restaurant Management System</p>
 </body>
 </html> 

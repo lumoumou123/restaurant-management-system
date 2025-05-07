@@ -43,7 +43,7 @@
       <el-card class="metric-card">
         <div class="metric-title">Average Rating</div>
         <div class="metric-value">
-          <span class="number">{{ Number(statistics.averageRating || 0).toFixed(1) }}</span>
+          <span class="number">{{ displayAverageRating }}</span>
           <el-rate
             v-model="statistics.averageRating"
             disabled
@@ -197,26 +197,6 @@
           </el-card>
         </el-col>
       </el-row>
-    </div>
-
-    <div class="rate-this-restaurant">
-      <h3>Rate this Restaurant:</h3>
-      <div v-if="isLoggedIn">
-        <el-rate
-          v-model="userRating"
-          show-score
-          @change="submitRating"
-          text-color="#ff9900"
-        ></el-rate>
-      </div>
-      <div v-else class="login-required-message">
-        <el-alert
-          title="Please log in to rate this restaurant"
-          type="info"
-          :closable="false"
-          show-icon>
-        </el-alert>
-      </div>
     </div>
   </div>
 </template>
@@ -563,6 +543,12 @@ export default {
       }
       
       return false;
+    },
+    displayAverageRating() {
+      // 确保评分是数字类型
+      const rating = Number(this.statistics.averageRating || 0);
+      // 格式化为一位小数
+      return rating.toFixed(1);
     }
   },
   created() {
@@ -644,9 +630,24 @@ export default {
   methods: {
     // Check if user is logged in
     checkLoginStatus() {
-      const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token');
       const userId = localStorage.getItem('userId');
-      this.isLoggedIn = !!(token && userId);
+      const userName = localStorage.getItem('userName');
+      const userRole = localStorage.getItem('userRole');
+      
+      console.log('Checking login status:', {
+        token, userId, userName, userRole
+      });
+      
+      this.isLoggedIn = !!(userId && userName);
+      
+      if (this.isLoggedIn) {
+        this.userId = userId;
+        this.userName = userName;
+        this.userRole = userRole;
+      }
+      
+      return this.isLoggedIn;
     },
     
     // Navigate to login page
@@ -1031,8 +1032,19 @@ export default {
           // 默认最近30天
           startDate.setDate(startDate.getDate() - 30);
         }
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        // 格式化日期为 YYYY-MM-DD
+        const formatDate = (date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+        
+        const startDateStr = formatDate(startDate);
+        const endDateStr = formatDate(endDate);
+        
+        console.log(`获取日期范围: ${startDateStr} 到 ${endDateStr}`);
         
         // 捕获所有可能的错误
         try {
@@ -1472,25 +1484,11 @@ export default {
     renderCommentsTimelineChart() {
       console.log("渲染评论时间线图表，开始");
       
-      // 检查是否有评论时间线数据
       if (!this.statistics.commentsTimeline || !Array.isArray(this.statistics.commentsTimeline) || this.statistics.commentsTimeline.length === 0) {
         console.log("无评论时间线数据可显示或数据格式不正确");
         return;
       }
       
-      console.log("评论时间线数据:", JSON.stringify(this.statistics.commentsTimeline));
-      
-      // 检查数据格式是否正确
-      const validData = Array.isArray(this.statistics.commentsTimeline) && this.statistics.commentsTimeline.every(item => 
-        item && typeof item === 'object' && 'date' in item && 'count' in item
-      );
-      
-      if (!validData) {
-        console.error("评论时间线数据格式不正确，应为 [{date, count}, ...]");
-        return;
-      }
-      
-      // 使用原生的ECharts实例而不是v-chart组件
       const chartElement = document.getElementById('commentsTimelineChart');
       if (!chartElement) {
         console.warn("找不到评论时间线图表DOM元素");
@@ -1498,86 +1496,93 @@ export default {
       }
       
       try {
-        // 获取已有的图表实例
         let existingChart = echarts.getInstanceByDom(chartElement);
         if (existingChart) {
-          // 如果已存在图表实例，先销毁它
           echarts.dispose(existingChart);
         }
         
-        // 创建新的图表实例
         let commentChart = echarts.init(chartElement);
         
-        // 排序并准备数据
-        const sortedTimeline = [...this.statistics.commentsTimeline].sort((a, b) => 
-          new Date(a.date) - new Date(b.date)
-        );
+        const xAxisData = this.statistics.commentsTimeline.map(item => item.date);
+        const seriesData = this.statistics.commentsTimeline.map(item => item.count);
         
-        // 生成完整的日期范围
-        const startDate = new Date(sortedTimeline[0].date);
-        const endDate = new Date(sortedTimeline[sortedTimeline.length - 1].date);
-        const dateRange = [];
-        let currentDate = new Date(startDate);
-        
-        // 创建日期列表，确保包含所有日期点
-        while (currentDate <= endDate) {
-          dateRange.push(new Date(currentDate).toISOString().split('T')[0]);
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-        
-        // 将日期映射到评论计数
-        const countMap = {};
-        sortedTimeline.forEach(item => {
-          countMap[item.date] = item.count;
-        });
-        
-        // 为每个日期生成计数，如果没有则为0
-        const xAxisData = dateRange;
-        const seriesData = dateRange.map(date => countMap[date] || 0);
-        
-        // 设置图表配置
         const option = {
-          title: {
-            text: '',  // 移除标题文字
-            left: 'center',
-            textStyle: {
-              fontSize: 14
-            }
-          },
           tooltip: {
             trigger: 'axis',
-            formatter: '{b}: {c} comments'  // 移除"条评论"文字
+            formatter: function(params) {
+              const data = params[0];
+              return `${data.name}<br/>评论数: ${data.value}`;
+            },
+            axisPointer: {
+              type: 'line',
+              lineStyle: {
+                color: '#409EFF',
+                width: 1,
+                type: 'solid'
+              }
+            }
           },
           grid: {
             left: '3%',
             right: '4%',
-            bottom: '8%',
-            top: '5%',  // 由于没有标题，可以减少顶部边距
+            bottom: '15%',
+            top: '5%',
             containLabel: true
           },
+          dataZoom: [{
+            type: 'slider',
+            show: true,
+            xAxisIndex: [0],
+            start: 0,
+            end: 100,
+            height: 8,
+            bottom: '2%',
+            borderColor: 'transparent',
+            backgroundColor: '#f1f1f1',
+            fillerColor: '#409EFF',
+            handleStyle: {
+              color: '#409EFF',
+              borderColor: '#409EFF'
+            }
+          }],
           xAxis: {
             type: 'category',
             data: xAxisData,
             axisLabel: {
               rotate: 45,
               formatter: function(value) {
-                // 简化日期显示
-                return value.substring(5); // 仅显示月和日 (MM-DD)
+                // 显示月-日
+                return value.substring(5);
+              },
+              interval: 0,
+              textStyle: {
+                fontSize: 12
               }
+            },
+            axisTick: {
+              alignWithLabel: true
             }
           },
           yAxis: {
             type: 'value',
-            name: '',  // 移除y轴名称
-            minInterval: 1
+            name: '评论数',
+            minInterval: 1,
+            splitLine: {
+              lineStyle: {
+                type: 'dashed'
+              }
+            }
           },
           series: [{
-            data: seriesData,
+            name: '评论数',
             type: 'line',
             smooth: true,
-            name: '',  // 移除系列名称
+            symbol: 'circle',
+            symbolSize: 6,
+            sampling: 'average',
             itemStyle: {
-              color: '#409EFF'
+              color: '#409EFF',
+              borderWidth: 2
             },
             areaStyle: {
               color: {
@@ -1587,19 +1592,21 @@ export default {
                 x2: 0,
                 y2: 1,
                 colorStops: [{
-                  offset: 0, 
+                  offset: 0,
                   color: 'rgba(64, 158, 255, 0.5)'
                 }, {
-                  offset: 1, 
+                  offset: 1,
                   color: 'rgba(64, 158, 255, 0.1)'
                 }]
               }
-            }
+            },
+            data: seriesData
           }]
         };
         
-        // 设置图表选项
         commentChart.setOption(option);
+        this.charts.commentsTimeline = commentChart;
+        
         console.log("评论时间线图表渲染完成");
       } catch (error) {
         console.error("渲染评论时间线图表出错:", error);
@@ -1825,36 +1832,53 @@ export default {
         return;
       }
       
-      // Create a map to count comments by date
+      // 获取日期范围
+      const [startDate, endDate] = this.dateRange;
+      const startTime = startDate.getTime();
+      const endTime = endDate.getTime();
+      
+      console.log('Filtering comments between:', startDate, 'and', endDate);
+      
+      // 创建日期映射并按日期范围筛选
       const commentsByDate = {};
       
+      // 生成日期范围内的所有日期
+      const dateList = [];
+      let currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().substring(0, 10);
+        commentsByDate[dateStr] = 0;  // 初始化为0
+        dateList.push(dateStr);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // 统计评论数量
       comments.forEach(comment => {
-        // Extract date part only from the timestamp
-        const date = comment.createTime ? comment.createTime.substring(0, 10) : null;
-        if (date) {
-          commentsByDate[date] = (commentsByDate[date] || 0) + 1;
+        const commentDate = new Date(comment.createTime);
+        // 只统计在日期范围内的评论
+        if (commentDate >= startDate && commentDate <= endDate) {
+          const dateStr = commentDate.toISOString().substring(0, 10);
+          commentsByDate[dateStr] = (commentsByDate[dateStr] || 0) + 1;
         }
       });
       
-      // Convert to timeline format
-      const timelineData = Object.keys(commentsByDate).map(date => ({
+      // 转换为时间线格式
+      const timelineData = dateList.map(date => ({
         date: date,
-        count: commentsByDate[date]
+        count: commentsByDate[date] || 0
       }));
-      
-      // Sort by date
-      timelineData.sort((a, b) => new Date(a.date) - new Date(b.date));
       
       console.log('Generated comments timeline data:', timelineData);
       
-      // Update statistics object with new timeline data
+      // 更新统计对象
       this.statistics.commentsTimeline = timelineData;
       
-      // Update the total comments count to match
-      this.statistics.totalComments = comments.length;
+      // 更新总评论数
+      const totalComments = Object.values(commentsByDate).reduce((sum, count) => sum + count, 0);
+      this.statistics.totalComments = totalComments;
       console.log('Updated total comments count:', this.statistics.totalComments);
       
-      // Render the timeline chart
+      // 渲染时间线图表
       this.$nextTick(() => {
         this.renderCommentsTimelineChart();
       });
@@ -1951,6 +1975,18 @@ export default {
       if (this.selectedRestaurant && this.dateRange && this.dateRange.length === 2) {
         this.getStatistics();
       }
+    },
+    dateRange: {
+      handler(newRange) {
+        if (newRange && newRange.length === 2) {
+          // 当日期范围变化时，重新计算平均评分
+          this.getStatistics();
+          if (this.comments.length > 0) {
+            this.updateCommentsTimeline(this.comments);
+          }
+        }
+      },
+      deep: true
     }
   }
 };
@@ -2078,11 +2114,36 @@ export default {
 
 /* 调整图表容器样式 */
 .chart-container {
-  flex: 1;
-  padding: 8px;
+  width: 100%;
+  height: calc(100% - 60px);
   position: relative;
-  height: 280px !important;
-  overflow: hidden;
+  overflow-x: auto;  /* 添加横向滚动 */
+  overflow-y: hidden; /* 禁止纵向滚动 */
+}
+
+#commentsTimelineChart {
+  width: 150% !important; /* 使图表宽度超出容器，实现滚动 */
+  height: 100% !important;
+  min-height: 300px;
+}
+
+/* 自定义滚动条样式 */
+.chart-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chart-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.chart-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.chart-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 /* 调整图表底部样式 */
